@@ -48,6 +48,7 @@ int main() {
         dst_rect.w = 32;
         dst_rect.h = 32;
         bm.blit(surf, &src_rect, &dst_rect);
+//        wm.blit_(*surf, src_rect, dst_rect, (Uint64)i);
         if ((i % 256) == 0) {
             fprintf(stdout, "client loop iteration %d\n", i);
         }

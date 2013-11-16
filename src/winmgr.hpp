@@ -56,16 +56,6 @@ class winmgr {
             stop_listener_.store(true);
         }
 
-    private:
-        /** Constructor */
-        winmgr();
-        /** Destructor */
-        virtual ~winmgr();
-        /** Prevent cloning */
-        winmgr(winmgr const&);
-        /** Prevent assignment */
-        void operator=(winmgr const&);
-
         /**
          * @brief Blits a provided surface onto the main surface.
          * @details This is to be called by the manager's listener, not directly
@@ -75,6 +65,16 @@ class winmgr {
          * @param dst_rect  Where to blit on main surface.
          */
         void blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect, Uint64 flag);
+
+    private:
+        /** Constructor */
+        winmgr();
+        /** Destructor */
+        virtual ~winmgr();
+        /** Prevent cloning */
+        winmgr(winmgr const&);
+        /** Prevent assignment */
+        void operator=(winmgr const&);
 
         /**
          * @brief the actual mechanics of updating the screen

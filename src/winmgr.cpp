@@ -71,12 +71,6 @@ winmgr::~winmgr() {
 }
 
 void winmgr::blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect, Uint64 flag) {
-    SDL_LockSurface(&src_surf);
-    if (((Uint32*)(src_surf.pixels))[0] != 0xffff0000) {
-        fprintf(stderr, "src_surf.pixels[0][0] %x\n", ((Uint32*)(src_surf.pixels))[0]);
-    } else {
-        fprintf(stdout, "%lu\n", flag);
-    }
     SDL_BlitSurface(&src_surf, &src_rect, scrn_, &dst_rect);
     render_();
 }
@@ -105,8 +99,8 @@ void winmgr::listener_() {
         SDL_Surface src_surf = std::get<0>(bp);     // tested working by IMG_SavePNG
         SDL_Rect src_rect = std::get<1>(bp);
         SDL_Rect dst_rect = std::get<2>(bp);
-        fprintf(stdout, "%lu", count);
-        blit_(src_surf, src_rect, dst_rect, count);        // NO LONGER SURE WORKING
+//        wm.blit_(*surf, src_rect, dst_rect, (Uint64)i);
+             blit_(src_surf, src_rect, dst_rect, count);        // NO LONGER SURE WORKING
         count++;
     }
 }
