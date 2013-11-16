@@ -52,6 +52,10 @@ class winmgr {
         /** ZMQ listener */
         void listener_();
 
+        inline void quit() {
+            stop_listener_.store(true);
+        }
+
     private:
         /** Constructor */
         winmgr();
@@ -70,7 +74,7 @@ class winmgr {
          * @param src_rect  ROI of caller image.
          * @param dst_rect  Where to blit on main surface.
          */
-        void blit_(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect);
+        void blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect, Uint64 flag);
 
         /**
          * @brief the actual mechanics of updating the screen

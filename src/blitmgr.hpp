@@ -39,35 +39,10 @@ class blitmgr {
             return instance_;
         }
 
-        void blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect) {
-            // pack blit params into struct
-            blit_params_t params = {src_surf, src_rect, dst_rect};
-            // serialize struct with messagepack
-            msgpack::sbuffer sbuf;
-            msgpack::pack(sbuf, params);
-            // create zmq message with msgpacked data
-            zmq::message_t msg(sbuf.size());
-            memcpy(msg.data(), sbuf.data(), sbuf.size());
-            // send message
-            zmqsock_.connect("tcp://127.0.0.1:19991");
-            zmqsock_.send(&msg, 0);
-        }
+        void blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect);
 
     private:
-        blitmgr() :
-            zmqcntx_(1),
-            zmqsock_(zmqcntx_, ZMQ_PUSH)
-        {
-            try {
-                zmqsock_.bind("tcp://127.0.0.1:19992");
-            } catch (zmq::error_t &e) {
-                fprintf(stderr, "ZMQ Error trying to bind to tcp:/// :19992.\n\t%d : %s",
-                        e.num(), e.what());
-                zmqsock_.close();
-                zmqcntx_.close();
-                throw;
-            }
-        }
+        blitmgr();
         virtual ~blitmgr();
         blitmgr(const blitmgr&);
         void operator=(blitmgr const&);

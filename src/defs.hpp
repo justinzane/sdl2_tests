@@ -34,48 +34,13 @@
 #define BMASK 0x000000ff
 #define BPP   32
 
-typedef struct blit_params {
-    public:
-        int w;                  /**< src_surf->w */
-        int h;                  /**< src_surf->h */
-        std::vector<Uint32> pixdata;     /**< src_surf->pixels */
-        int src_x;              /**< src_rect->x */
-        int src_y;              /**< src_rect->y */
-        int src_w;              /**< src_rect->w */
-        int src_h;              /**< src_rect->h */
-        int dst_x;              /**< dst_rect->x */
-        int dst_y;              /**< dst_rect->y */
-        int dst_w;              /**< dst_rect->w */
-        int dst_h;              /**< dst_rect->h */
+#define SRVR_ADDR  "tcp://127.0.0.1:19992"
+#define CLNT_ADDR  "tcp://127.0.0.1:19991"
 
-        blit_params() :
-            w(0),
-            h(0),
-            src_x(0),
-            src_y(0),
-            src_w(0),
-            src_h(0),
-            dst_x(0),
-            dst_y(0),
-            dst_w(0),
-            dst_h(0)
-        {};
-        blit_params(SDL_Surface*    src_surf,
-                    const SDL_Rect* src_rect,
-                    SDL_Rect*       dst_rect) :
-            w(src_surf->w),
-            h(src_surf->h),
-            src_x(src_rect->x),
-            src_y(src_rect->y),
-            src_w(src_rect->w),
-            src_h(src_rect->h),
-            dst_x(dst_rect->x),
-            dst_y(dst_rect->y),
-            dst_w(dst_rect->w),
-            dst_h(dst_rect->h)
-        {};
-        MSGPACK_DEFINE(w, h, pixdata, src_x, src_y, src_w, src_h, dst_x, dst_w, dst_x, dst_h);
+std::vector<Uint32> blitparams2vec(SDL_Surface*    src_surf,
+                                   const SDL_Rect* src_rect,
+                                   SDL_Rect*       dst_rect);
 
-} blit_params_t;
+std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> vec2blitparams(std::vector<Uint32> bv);
 
 #endif /* DEFS_HPP_ */

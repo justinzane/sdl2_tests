@@ -24,20 +24,38 @@
 #include "blitmgr.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <stdio.h>
+#include <chrono>
 
 int main() {
+    fprintf(stdout, "client: started ...\n");
     winmgr& wm = winmgr::get_winmgr();
-    wm.listener_();
+    fprintf(stdout, "client: got winmgr& ...\n");
     blitmgr& bm = blitmgr::get_blitmgr();
-    srand(time(0));
+    fprintf(stdout, "client: got blitmgr& ...\n");
+    srand48(time(0));
     SDL_Rect src_rect;
     SDL_Rect dst_rect;
     SDL_Surface* surf;
-    surf = IMG_Load("/usr/share/icons/oxygen/32x32/emotes/face-smile.png");
+    surf = SDL_CreateRGBSurface(0,32,32,32,RMASK,GMASK,BMASK,AMASK);
     src_rect.x = 0; src_rect.y = 0; src_rect.w = 32; src_rect.h = 32;
+    Uint32 color = 0;
     for (int i = 0; i < 2048; i++) {
-        dst_rect.x = rand() % 1334; dst_rect.y = rand() % 688; dst_rect.w = 32; dst_rect.h = 32;
+        color = 0xffff0000; //0xff000000 + (lrand48() % 0x00ffffff);
+        SDL_FillRect(surf, NULL, color);
+        dst_rect.x = lrand48() % 1334;
+        dst_rect.y = lrand48() % 688;
+        dst_rect.w = 32;
+        dst_rect.h = 32;
         bm.blit(surf, &src_rect, &dst_rect);
+        if ((i % 256) == 0) {
+            fprintf(stdout, "client loop iteration %d\n", i);
+        }
+        timespec ts1, ts2;
+        ts1.tv_sec = 0;
+        ts1.tv_nsec = 30000000;
+        nanosleep(&ts1, &ts2);
     }
+    wm.quit();
     return 0;
 }

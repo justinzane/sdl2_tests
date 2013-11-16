@@ -22,4 +22,54 @@
  */
 #include "blitmgr.hpp"
 
-blitmgr::~blitmgr() {} // TODO Auto-generated destructor stub
+blitmgr::blitmgr() :
+    zmqcntx_(1),
+    zmqsock_(zmqcntx_, ZMQ_PUSH)
+{
+    try {
+        zmqsock_.bind(CLNT_ADDR);
+        fprintf(stdout, "blit bound to %s\n", CLNT_ADDR);
+    } catch (zmq::error_t &e) {
+        fprintf(stderr, "ZMQ Error trying to bind to %s.\n\t%d : %s",
+                CLNT_ADDR, e.num(), e.what());
+        zmqsock_.close();
+        zmqcntx_.close();
+        throw;
+    }
+    try {
+        zmqsock_.connect(SRVR_ADDR);
+        fprintf(stdout, "blit NOW connected to %s\n", SRVR_ADDR);
+    } catch (zmq::error_t &e) {
+        fprintf(stderr, "ZMQ Error trying to connect to %s.\n\t%d : %s",
+                SRVR_ADDR, e.num(), e.what());
+        zmqsock_.close();
+        zmqcntx_.close();
+        throw;
+    }
+}
+
+blitmgr::~blitmgr() {
+    if (zmqsock_.connected()) {
+        zmqsock_.disconnect(SRVR_ADDR);
+    }
+    zmqsock_.close();
+    zmqcntx_.close();
+} // TODO Auto-generated destructor stub
+
+void blitmgr::blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect) {
+    // pack blit params into vector
+    std::vector<Uint32> bp = blitparams2vec(src_surf, src_rect, dst_rect);
+    // serialize struct with messagepack
+    msgpack::sbuffer sbuf;
+    msgpack::pack(sbuf, bp);
+    // create zmq message with msgpacked data
+//    zmq::message_t msg(sbuf.size());
+//    memcpy(msg.data(), sbuf.data(), sbuf.size());
+    // send message
+    try {
+        size_t bytes_sent = zmqsock_.send(sbuf.data(), sbuf.size(), 0);
+        //fprintf(stdout, "blit sent   %lu bytes\n", bytes_sent);
+    } catch (zmq::error_t &e) {
+        fprintf(stderr, "Error[blit]  %d, %s\n", e.num(), e.what());
+    }
+}
