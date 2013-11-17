@@ -26,11 +26,14 @@
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <chrono>
+#include <signal.h>
 
 int main() {
     fprintf(stdout, "client: started ...\n");
     winmgr& wm = winmgr::get_winmgr();
     fprintf(stdout, "client: got winmgr& ...\n");
-    wm.quit();
+
+    wm.listener_();
+
     return 0;
 }

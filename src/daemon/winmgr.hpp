@@ -23,19 +23,14 @@
 #ifndef WINMGR_HPP_
 #define WINMGR_HPP_
 
-//#include </usr/include/c++/4.8.2/x86_64-unknown-linux-gnu/bits/stdc++.h>
-//#include <stddef.h>
-//#include <stdio.h>
-//#include <stdlib.h>
+#include "../libsilly/defs.hpp"
 #include <SDL2/SDL.h>
 #include <zmq.hpp>
-
-//#include <condition_variable>
+#include <msgpack.hpp>
 #include <cstdbool>
-//#include <list>
-//#include <mutex>
-#include <thread>
+#include <tuple>
 #include <atomic>
+#include <stdio.h>
 
 /**  @type winmgr TODO: WRITEME */
 class winmgr {
@@ -52,8 +47,9 @@ class winmgr {
         /** ZMQ listener */
         void listener_();
 
-        inline void quit() {
-            stop_listener_.store(true);
+        static void quit(int signal) {
+            fprintf(stderr, "Recieved signal %d.\n", signal);
+            stop_listening_ = true;
         }
 
         /**
@@ -64,7 +60,7 @@ class winmgr {
          * @param src_rect  ROI of caller image.
          * @param dst_rect  Where to blit on main surface.
          */
-        void blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect, Uint64 flag);
+        void blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect);
 
     private:
         /** Constructor */
@@ -95,10 +91,7 @@ class winmgr {
         zmq::context_t zmqcntx_;
         zmq::socket_t zmqsock_;
         const int zmqsock_linger_ = 1000;
-
-        // daemon thread stuff
-        std::atomic<bool> stop_listener_;
-        std::thread listener_thread_;
+        static bool stop_listening_;
 };
 
 #endif /* WINMGR_HPP_ */

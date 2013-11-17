@@ -200,6 +200,10 @@ env.AppendUnique(LIBS="msgpack")
 
 # env.Prepend(CPPPATH=["#/", "#/src"])
 env.AppendUnique(CCFLAGS=Split("-W -Wall"))
+if env["cxxstd"] in ["c++11", "gnu++11"]:
+    env.Append(CPPDEFINES={'__cplusplus':'201103L'})
+elif env["cxxstd"] in ["c++1y", "gnu++1y"]:
+    env.Append(CPPDEFINES={'__cplusplus':'201401L'})
 env.AppendUnique(CFLAGS='-std=' + env["cstd"])
 env.AppendUnique(CXXFLAGS='-std=' + env['cxxstd'])
 if env['strict']:

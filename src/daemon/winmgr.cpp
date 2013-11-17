@@ -25,14 +25,18 @@
 #include "winmgr.hpp"
 #include <SDL2/SDL_image.h>
 #include <msgpack.hpp>
-#include <thread>
+#include <zmq.hpp>
+#include <tuple>
 #include <atomic>
+#include <signal.h>
+
+bool winmgr::stop_listening_ = false;
 
 winmgr::winmgr() :
     zmqcntx_(1),
-    zmqsock_(zmqcntx_, ZMQ_PULL),
-    stop_listener_(false)
+    zmqsock_(zmqcntx_, ZMQ_PULL)
 {
+
     // Start setting up ZMQ -------------------------------------------------------------------
     zmqsock_.bind(SRVR_ADDR);
     zmqsock_.setsockopt(ZMQ_LINGER, &zmqsock_linger_, sizeof (zmqsock_linger_));
@@ -57,20 +61,30 @@ winmgr::winmgr() :
     scrn_ = SDL_CreateRGBSurface(0, disp_w_, disp_h_, 32, RMASK, GMASK, BMASK, AMASK);
     txtr_ = SDL_CreateTexture(rend_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
                               disp_w_, disp_h_);
-    // Start listener thread -------------------------------------------------------------------
-    listener_thread_ = std::thread(&winmgr::listener_, std::ref(*this));
-    listener_thread_.detach();
+
+    // Handle kill/term signals
+    struct sigaction quit_action;
+    quit_action.sa_handler = &quit;
+    sigemptyset(&quit_action.sa_mask);
+    sigaddset(&quit_action.sa_mask, SIGINT);
+    sigaddset(&quit_action.sa_mask, SIGQUIT);
+    sigaddset(&quit_action.sa_mask, SIGKILL);
+    sigaddset(&quit_action.sa_mask, SIGTERM);
+    quit_action.sa_flags = 0;
+    sigaction(SIGINT, &quit_action, nullptr);
+    sigaction(SIGKILL, &quit_action, nullptr);
+    sigaction(SIGQUIT, &quit_action, nullptr);
+    sigaction(SIGTERM, &quit_action, nullptr);
 }
 
 winmgr::~winmgr() {
-    stop_listener_.store(true);
-    listener_thread_.join();
+    stop_listening_ = true;
     zmqsock_.close();
     zmqcntx_.close();
     SDL_Quit();
 }
 
-void winmgr::blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect, Uint64 flag) {
+void winmgr::blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect) {
     SDL_BlitSurface(&src_surf, &src_rect, scrn_, &dst_rect);
     render_();
 }
@@ -83,8 +97,7 @@ void winmgr::render_() {
 }
 
 void winmgr::listener_() {
-    Uint64 count = 0;
-    while (!(stop_listener_.load())) {
+    while (!(stop_listening_)) {
         zmq::message_t req;
         try { zmqsock_.recv(&req); }    // Wait for next request from client
         catch (zmq::error_t &e) {
@@ -99,8 +112,6 @@ void winmgr::listener_() {
         SDL_Surface src_surf = std::get<0>(bp);     // tested working by IMG_SavePNG
         SDL_Rect src_rect = std::get<1>(bp);
         SDL_Rect dst_rect = std::get<2>(bp);
-//        wm.blit_(*surf, src_rect, dst_rect, (Uint64)i);
-             blit_(src_surf, src_rect, dst_rect, count);        // NO LONGER SURE WORKING
-        count++;
+        blit_(src_surf, src_rect, dst_rect);        // NO LONGER SURE WORKING
     }
 }

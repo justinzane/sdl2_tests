@@ -38,7 +38,7 @@ int main() {
     src_rect.x = 0; src_rect.y = 0; src_rect.w = 32; src_rect.h = 32;
     Uint32 color = 0;
     for (int i = 0; i < 2048; i++) {
-        color = 0xffff0000; //0xff000000 + (lrand48() % 0x00ffffff);
+        color = 0xff000000 + (lrand48() % 0x00ffffff);
         SDL_FillRect(surf, NULL, color);
         dst_rect.x = lrand48() % 1334;
         dst_rect.y = lrand48() % 688;
@@ -46,13 +46,13 @@ int main() {
         dst_rect.h = 32;
         bm.blit(surf, &src_rect, &dst_rect);
 //        wm.blit_(*surf, src_rect, dst_rect, (Uint64)i);
-        if ((i % 256) == 0) {
+        if ((i % 128) == 0) {
             fprintf(stdout, "client loop iteration %d\n", i);
+            timespec ts1, ts2;
+            ts1.tv_sec = 0;
+            ts1.tv_nsec = 30000000;
+            nanosleep(&ts1, &ts2);
         }
-        timespec ts1, ts2;
-        ts1.tv_sec = 0;
-        ts1.tv_nsec = 30000000;
-        nanosleep(&ts1, &ts2);
     }
     bm.quit();
     return 0;
