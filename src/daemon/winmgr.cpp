@@ -21,7 +21,7 @@
  * @details		TODO WRITEME
  */
 
-#include "defs.hpp"
+#include "../libsilly/defs.hpp"
 #include "winmgr.hpp"
 #include <SDL2/SDL_image.h>
 #include <msgpack.hpp>

@@ -1,0 +1,5 @@
+ch.hsr.sconsolidator.core.BuildSettingsPreferencePage_useParentScope=false
+eclipse.preferences.version=1
+numberOfJobs=1
+perfAccuracyProfile=default
+startingDirectory=/home/justin/src/sdl2_tests

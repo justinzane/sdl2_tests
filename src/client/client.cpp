@@ -20,7 +20,6 @@
  * @brief		TODO WRITEME
  * @details		TODO WRITEME
  */
-#include "winmgr.hpp"
 #include "blitmgr.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -28,8 +27,6 @@
 #include <chrono>
 
 int main() {
-    fprintf(stdout, "client: started ...\n");
-    winmgr& wm = winmgr::get_winmgr();
     fprintf(stdout, "client: got winmgr& ...\n");
     blitmgr& bm = blitmgr::get_blitmgr();
     fprintf(stdout, "client: got blitmgr& ...\n");
@@ -57,6 +54,6 @@ int main() {
         ts1.tv_nsec = 30000000;
         nanosleep(&ts1, &ts2);
     }
-    wm.quit();
+    bm.quit();
     return 0;
 }

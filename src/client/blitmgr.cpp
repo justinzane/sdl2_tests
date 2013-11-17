@@ -56,6 +56,10 @@ blitmgr::~blitmgr() {
     zmqcntx_.close();
 } // TODO Auto-generated destructor stub
 
+void blitmgr::quit() {
+    this->~blitmgr();
+}
+
 void blitmgr::blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect) {
     // pack blit params into vector
     std::vector<Uint32> bp = blitparams2vec(src_surf, src_rect, dst_rect);

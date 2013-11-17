@@ -1,5 +1,5 @@
 /**
- * @file 		blitmgr.hpp is part of Project winmgr
+ * @file 		main.cpp is part of Project winmgr
  * @author		justin
  * @date		Nov 12, 2013
  * @copyright   Copyright justin, Nov 12, 2013
@@ -20,35 +20,17 @@
  * @brief		TODO WRITEME
  * @details		TODO WRITEME
  */
-#ifndef BLITMGR_HPP_
-#define BLITMGR_HPP_
-
-#include "defs.hpp"
 #include "winmgr.hpp"
-
-#include <zmq.hpp>
-#include <msgpack.hpp>
+#include "../libsilly/defs.hpp"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <chrono>
 
-/**  @type blitmgrx TODO: WRITEME */
-class blitmgr {
-    public:
-        static blitmgr& get_blitmgr() {
-            static blitmgr instance_;
-            return instance_;
-        }
-
-        void blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect);
-
-    private:
-        blitmgr();
-        virtual ~blitmgr();
-        blitmgr(const blitmgr&);
-        void operator=(blitmgr const&);
-
-        zmq::context_t zmqcntx_;
-        zmq::socket_t zmqsock_;
-};
-
-#endif /* BLITMGR_HPP_ */
+int main() {
+    fprintf(stdout, "client: started ...\n");
+    winmgr& wm = winmgr::get_winmgr();
+    fprintf(stdout, "client: got winmgr& ...\n");
+    wm.quit();
+    return 0;
+}

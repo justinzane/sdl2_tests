@@ -1,0 +1,6 @@
+/config.log
+/libsilly.a
+/build
+/.scons-option-cache
+/client
+/daemon
