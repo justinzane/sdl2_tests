@@ -86,6 +86,7 @@ opts.AddVariables(
     ('extra_flags_debug',
      'Extra compiler and linker flags to use for debug builds',
      "-O0 -g"),
+
     # Names -----------------------------------------------------------------------------------
     ('server_gid',
      'group id of the user who runs daemon',
@@ -111,7 +112,7 @@ builds = {
 }
 build = env["build"]
 build_dir = os.path.join("$build_dir", build)
-VariantDir("$build_dir", "src", duplicate=0)
+env.VariantDir(build_dir, "src", duplicate=0)
 
 if env["lockfile"]:
     print "Creating lockfile"
@@ -211,11 +212,11 @@ if env['strict']:
 
 # Export(["env", ])
 
+# Actually build shit! ------------------------------------------------------------------------
 libsilly_sources = ['src/libsilly/defs.cpp', ]
 libsilly = env.Library("libsilly", libsilly_sources)
 
-client_sources = ['src/client/client.cpp',
-                  'src/client/blitmgr.cpp']
+client_sources = ['src/client/client.cpp', 'src/client/event-handlers.cpp']
 client = env.Program("client", [client_sources, libsilly])
 
 daemon_sources = ['src/daemon/daemon.cpp',

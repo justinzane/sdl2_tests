@@ -45,6 +45,15 @@
 /** @def Millisecs to process queued messages before close. Default infinite wait.*/
 #define ZMQ_SOCK_LINGER 1000
 
+/**
+ * @brief Blindly convert an SDL_Event into a vector.
+ * @details Since an SDL_Event is a ~56 byte (currently) union, just put the bytes in a
+ * vector for packing with msgpack. Note that this size is subject to change.
+ */
+std::vector<Uint8> event2vec(SDL_Event* evt);
+
+SDL_Event vec2event(std::vector<Uint8> vec);
+
 std::vector<Uint32> blitparams2vec(SDL_Surface*    src_surf,
                                    const SDL_Rect* src_rect,
                                    SDL_Rect*       dst_rect);

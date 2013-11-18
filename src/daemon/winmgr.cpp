@@ -107,9 +107,16 @@ void winmgr::listener_() {
         // Get SDL_Events and publish them.
         SDL_Event evt;
         int poll_result = SDL_PollEvent(&evt);
-        if (poll_result == 1) {
+        if (poll_result == 1) {     // If poll_result == 0, no event, move along
             zmq::message_t evt_msg;
-            //
+            std::vector<Uint8> evt_vec = event2vec(&evt);
+            msgpack::sbuffer sbuf;
+            msgpack::pack(sbuf, evt_vec);
+            try {
+                size_t bytes_sent = zmq_pub_sock_.send(sbuf.data(), sbuf.size(), 0);
+            } catch (zmq::error_t &e) {
+                fprintf(stderr, "ZMQ Error: %d %s\n", e.num(), e.what());
+            }
         }
         // Handle Rendering requests from clients.
         zmq::message_t render_req;
@@ -127,9 +134,9 @@ void winmgr::listener_() {
         std::vector<Uint32> bv;         // convert it back into blit params
         obj.convert(&bv);
         std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> bp = vec2blitparams(bv);
-        SDL_Surface src_surf = std::get<0>(bp);     // tested working by IMG_SavePNG
+        SDL_Surface src_surf = std::get<0>(bp);
         SDL_Rect src_rect = std::get<1>(bp);
         SDL_Rect dst_rect = std::get<2>(bp);
-        blit_(src_surf, src_rect, dst_rect);        // NO LONGER SURE WORKING
+        blit_(src_surf, src_rect, dst_rect);
     }
 }

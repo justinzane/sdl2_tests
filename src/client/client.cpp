@@ -1,5 +1,5 @@
 /**
- * @file 		main.cpp is part of Project winmgr
+ * @file 		blitmgr.cpp is part of Project winmgr
  * @author		justin
  * @date		Nov 12, 2013
  * @copyright   Copyright justin, Nov 12, 2013
@@ -20,40 +20,62 @@
  * @brief		TODO WRITEME
  * @details		TODO WRITEME
  */
-#include "blitmgr.hpp"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <stdio.h>
-#include <chrono>
+#include "client.hpp"
+
+void blit(SDL_Surface* src_surf,
+          const SDL_Rect* src_rect,
+          SDL_Rect* dst_rect,
+          zmq::socket_t sock) {
+    std::vector<Uint32> bp = blitparams2vec(src_surf, src_rect, dst_rect);
+    msgpack::sbuffer sbuf;
+    msgpack::pack(sbuf, bp);
+    try {
+        size_t bytes_sent __attribute__((unused));
+        bytes_sent = sock.send(sbuf.data(), sbuf.size(), 0);
+    } catch (zmq::error_t &e) {
+        fprintf(stderr, "Error[blit]  %d, %s\n", e.num(), e.what());
+    }
+}
+
+/*--------------------------------------------------------------------------------------------*/
 
 int main() {
-    fprintf(stdout, "client: got winmgr& ...\n");
-    blitmgr& bm = blitmgr::get_blitmgr();
-    fprintf(stdout, "client: got blitmgr& ...\n");
-    srand48(time(0));
-    SDL_Rect src_rect;
-    SDL_Rect dst_rect;
-    SDL_Surface* surf;
-    surf = SDL_CreateRGBSurface(0,32,32,32,RMASK,GMASK,BMASK,AMASK);
-    src_rect.x = 0; src_rect.y = 0; src_rect.w = 32; src_rect.h = 32;
-    Uint32 color = 0;
-    for (int i = 0; i < 2048; i++) {
-        color = 0xff000000 + (lrand48() % 0x00ffffff);
-        SDL_FillRect(surf, NULL, color);
-        dst_rect.x = lrand48() % 1334;
-        dst_rect.y = lrand48() % 688;
-        dst_rect.w = 32;
-        dst_rect.h = 32;
-        bm.blit(surf, &src_rect, &dst_rect);
-//        wm.blit_(*surf, src_rect, dst_rect, (Uint64)i);
-        if ((i % 128) == 0) {
-            fprintf(stdout, "client loop iteration %d\n", i);
-            timespec ts1, ts2;
-            ts1.tv_sec = 0;
-            ts1.tv_nsec = 30000000;
-            nanosleep(&ts1, &ts2);
+    zmq::context_t zmqcntx_;
+    // Setup ZMQ PUSH for sending bitmaps to server
+    zmq::socket_t zmq_push_sock_(zmqcntx_, ZMQ_PUSH);
+    zmq_push_sock_.bind(CLNT_PUSH_ADDR);
+    zmq_push_sock_.connect(SRVR_PULL_ADDR);
+    // Setup ZMQ SUB for getting events
+    zmq::socket_t zmq_sub_sock_(zmqcntx_, ZMQ_SUB);
+    zmq_sub_sock_.bind(CLNT_SUB_ADDR);
+    zmq_sub_sock_.connect(SRVR_PUB_ADDR);
+
+    // The main loop -- recv events and send bitmaps
+    while (!(client::should_quit())) {
+        // Check for events
+        zmq::message_t evt_msg;
+        if (zmq_sub_sock_.recv(&evt_msg, ZMQ_NOBLOCK)) {
+            msgpack::unpacked unpacked;
+            msgpack::unpack(&unpacked, reinterpret_cast<char*>(evt_msg.data()), evt_msg.size());
+            msgpack::object obj = unpacked.get();
+            std::vector<Uint8> evt_vec;
+            obj.convert(&evt_vec);
+            SDL_Event evt = vec2event(evt_vec);
+            handler(&evt);
         }
+        // Send graphics
     }
-    bm.quit();
+
+    // Cleanup after ourselves.
+    if (zmq_push_sock_.connected()) {
+        zmq_push_sock_.disconnect(SRVR_PULL_ADDR);
+    }
+    if (zmq_sub_sock_.connected()) {
+        zmq_sub_sock_.disconnect(SRVR_PULL_ADDR);
+    }
+    zmq_push_sock_.close();
+    zmq_sub_sock_.close();
+    zmqcntx_.close();
+
     return 0;
 }

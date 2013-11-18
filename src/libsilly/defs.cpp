@@ -23,6 +23,26 @@
 
 #include "defs.hpp"
 
+/** @todo Modify this to use OpenMP/Cilk+/OpenACC/magic. */
+std::vector<Uint8> event2vec(SDL_Event* evt) {
+    std::vector<Uint8> vec;
+    for (Uint32 i = 0; i < sizeof(SDL_Event); i++) {
+        vec[i] = ((Uint8*)evt)[i];
+    }
+    vec.shrink_to_fit();
+    return vec;
+}
+
+/** @todo Modify this to use OpenMP/Cilk+/OpenACC/magic. */
+SDL_Event vec2event(std::vector<Uint8> vec) {
+    SDL_Event evt;
+    for (Uint32 i = 0; i < sizeof(SDL_Event); i++) {
+        ((Uint8*)&evt)[i] = vec[i];
+    }
+    return evt;
+}
+
+/** @todo Modify this to use OpenMP/Cilk+/OpenACC/magic. */
 std::vector<Uint32> blitparams2vec(SDL_Surface*    src_surf,
                                    const SDL_Rect* src_rect,
                                    SDL_Rect*       dst_rect) {
@@ -46,6 +66,7 @@ std::vector<Uint32> blitparams2vec(SDL_Surface*    src_surf,
     return bv;
 }
 
+/** @todo Modify this to use OpenMP/Cilk+/OpenACC/magic. */
 std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> vec2blitparams(std::vector<Uint32> bv) {
     SDL_Rect sr, dr;
     Uint32 ssw = bv[0];
