@@ -40,7 +40,7 @@
 								</option>
 								<option id="org.eclipse.cdt.build.core.settings.holder.symbols.1347280565" name="Symbols" superClass="org.eclipse.cdt.build.core.settings.holder.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_REENTRANT"/>
-									<listOptionValue builtIn="false" value="__cplusplus=201103L"/>
+									<listOptionValue builtIn="false" value="__cplusplus=199711L"/>
 									<listOptionValue builtIn="false" value="$EXTRA_DEFINE"/>
 									<listOptionValue builtIn="false" value="__gnu_linux__=1"/>
 									<listOptionValue builtIn="false" value="__x86_64__=1"/>
@@ -205,6 +205,7 @@
 									<listOptionValue builtIn="false" value="__GCC_ATOMIC_CHAR_LOCK_FREE=2"/>
 									<listOptionValue builtIn="false" value="__GXX_ABI_VERSION=1002"/>
 									<listOptionValue builtIn="false" value="__GNUC__=4"/>
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__=1"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.647202819" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>

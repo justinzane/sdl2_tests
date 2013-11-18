@@ -27,21 +27,21 @@ blitmgr::blitmgr() :
     zmqsock_(zmqcntx_, ZMQ_PUSH)
 {
     try {
-        zmqsock_.bind(CLNT_ADDR);
-        fprintf(stdout, "blit bound to %s\n", CLNT_ADDR);
+        zmqsock_.bind(CLNT_PUSH_ADDR);
+        fprintf(stdout, "blit bound to %s\n", CLNT_PUSH_ADDR);
     } catch (zmq::error_t &e) {
         fprintf(stderr, "ZMQ Error trying to bind to %s.\n\t%d : %s",
-                CLNT_ADDR, e.num(), e.what());
+                CLNT_PUSH_ADDR, e.num(), e.what());
         zmqsock_.close();
         zmqcntx_.close();
         throw;
     }
     try {
-        zmqsock_.connect(SRVR_ADDR);
-        fprintf(stdout, "blit NOW connected to %s\n", SRVR_ADDR);
+        zmqsock_.connect(SRVR_PULL_ADDR);
+        fprintf(stdout, "blit NOW connected to %s\n", SRVR_PULL_ADDR);
     } catch (zmq::error_t &e) {
         fprintf(stderr, "ZMQ Error trying to connect to %s.\n\t%d : %s",
-                SRVR_ADDR, e.num(), e.what());
+                SRVR_PULL_ADDR, e.num(), e.what());
         zmqsock_.close();
         zmqcntx_.close();
         throw;
@@ -50,7 +50,7 @@ blitmgr::blitmgr() :
 
 blitmgr::~blitmgr() {
     if (zmqsock_.connected()) {
-        zmqsock_.disconnect(SRVR_ADDR);
+        zmqsock_.disconnect(SRVR_PULL_ADDR);
     }
     zmqsock_.close();
     zmqcntx_.close();

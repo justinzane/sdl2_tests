@@ -44,11 +44,17 @@ class winmgr {
             return instance_;
         }
 
-        /** ZMQ listener */
+        /**
+         * @brief The "event loop" for the window server; everything interesting happens here.
+         */
         void listener_();
 
+        /**
+         * @brief Function to quit the listener loop.
+         * @param signal, unused
+         */
         static void quit(int signal) {
-            fprintf(stderr, "Recieved signal %d.\n", signal);
+            fprintf(stderr, "Received signal %d.\n", signal);
             stop_listening_ = true;
         }
 
@@ -89,8 +95,8 @@ class winmgr {
 
         //zmq stuff
         zmq::context_t zmqcntx_;
-        zmq::socket_t zmqsock_;
-        const int zmqsock_linger_ = 1000;
+        zmq::socket_t zmq_pull_sock_;       /**< Socket that "pulls" images to be rendered. */
+        zmq::socket_t zmq_pub_sock_;        /**< Socket that "publishes" events to clients. */
         static bool stop_listening_;
 };
 

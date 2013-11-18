@@ -34,8 +34,16 @@
 #define BMASK 0x000000ff
 #define BPP   32
 
-#define SRVR_ADDR  "tcp://127.0.0.1:19992"
-#define CLNT_ADDR  "tcp://127.0.0.1:19991"
+/** @def Address for display server pull socket. Recvs images from clients. */
+#define SRVR_PULL_ADDR  "tcp://127.0.0.1:19992"
+/** @def Address for display server publish socket. Sends events to clients. */
+#define SRVR_PUB_ADDR   "tcp://127.0.0.1:19994"
+/** @def Address for game client push socket. Sends images from clients. */
+#define CLNT_PUSH_ADDR  "tcp://127.0.0.1:19991"
+/** @def Address for game client subscribe socket. Recvs events from clients. */
+#define CLNT_SUB_ADDR   "tcp://127.0.0.1:19993"
+/** @def Millisecs to process queued messages before close. Default infinite wait.*/
+#define ZMQ_SOCK_LINGER 1000
 
 std::vector<Uint32> blitparams2vec(SDL_Surface*    src_surf,
                                    const SDL_Rect* src_rect,

@@ -34,12 +34,17 @@ bool winmgr::stop_listening_ = false;
 
 winmgr::winmgr() :
     zmqcntx_(1),
-    zmqsock_(zmqcntx_, ZMQ_PULL)
+    zmq_pull_sock_(zmqcntx_, ZMQ_PULL),
+    zmq_pub_sock_(zmqcntx_, ZMQ_PUB)
 {
 
     // Start setting up ZMQ -------------------------------------------------------------------
-    zmqsock_.bind(SRVR_ADDR);
-    zmqsock_.setsockopt(ZMQ_LINGER, &zmqsock_linger_, sizeof (zmqsock_linger_));
+    int linger = ZMQ_SOCK_LINGER;
+    zmq_pull_sock_.bind(SRVR_PULL_ADDR);
+    zmq_pull_sock_.setsockopt(ZMQ_LINGER, (void*)&linger, sizeof(linger));
+    zmq_pub_sock_.bind(SRVR_PUB_ADDR);
+    zmq_pub_sock_.setsockopt(ZMQ_LINGER, (void*)&linger, sizeof(linger));
+
     // Start SDL2 -----------------------------------------------------------------------------
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "Unable to initialize SDL:  %s\n", SDL_GetError()); throw;
@@ -63,6 +68,7 @@ winmgr::winmgr() :
                               disp_w_, disp_h_);
 
     // Handle kill/term signals
+    // TODO: moveme to daemon.
     struct sigaction quit_action;
     quit_action.sa_handler = &quit;
     sigemptyset(&quit_action.sa_mask);
@@ -79,7 +85,7 @@ winmgr::winmgr() :
 
 winmgr::~winmgr() {
     stop_listening_ = true;
-    zmqsock_.close();
+    zmq_pull_sock_.close();
     zmqcntx_.close();
     SDL_Quit();
 }
@@ -98,13 +104,25 @@ void winmgr::render_() {
 
 void winmgr::listener_() {
     while (!(stop_listening_)) {
-        zmq::message_t req;
-        try { zmqsock_.recv(&req); }    // Wait for next request from client
+        // Get SDL_Events and publish them.
+        SDL_Event evt;
+        int poll_result = SDL_PollEvent(&evt);
+        if (poll_result == 1) {
+            zmq::message_t evt_msg;
+            //
+        }
+        // Handle Rendering requests from clients.
+        zmq::message_t render_req;
+        try {
+            zmq_pull_sock_.recv(&render_req, ZMQ_NOBLOCK);
+        }
         catch (zmq::error_t &e) {
-            fprintf(stderr, "ZMQ Error: %d : %s\n", e.num(), e.what()); break;
+            if (e.num() != EAGAIN) {
+                fprintf(stderr, "ZMQ Error: %d %s\n", e.num(), e.what()); break;
+            }
         }
         msgpack::unpacked unpacked;     // Unpack the msgpacked request
-        msgpack::unpack(&unpacked, reinterpret_cast<char*>(req.data()), req.size());
+        msgpack::unpack(&unpacked, reinterpret_cast<char*>(render_req.data()), render_req.size());
         msgpack::object obj = unpacked.get();
         std::vector<Uint32> bv;         // convert it back into blit params
         obj.convert(&bv);
