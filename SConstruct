@@ -216,7 +216,7 @@ if env['strict']:
 libsilly_sources = ['src/libsilly/defs.cpp', ]
 libsilly = env.Library("libsilly", libsilly_sources)
 
-client_sources = ['src/client/client.cpp', 'src/client/event-handlers.cpp']
+client_sources = ['src/client/client.cpp', ]
 client = env.Program("client", [client_sources, libsilly])
 
 daemon_sources = ['src/daemon/daemon.cpp',

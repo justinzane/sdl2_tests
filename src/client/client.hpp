@@ -23,7 +23,7 @@
 #ifndef CLIENT_HPP_
 #define CLIENT_HPP_
 
-#include "event-handlers.hpp"
+#include "client.hpp"
 #include "../libsilly/defs.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -32,11 +32,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void do_quit();
+static bool quit_client_loop = false;                   /**< Counts cows by satellite. */
+zmq::context_t zmqcntx_(2);                             /**< The only client ZMQ context. */
+zmq::socket_t zmq_push_sock_(zmqcntx_, ZMQ_PUSH);       /**< The socket to push to server. */
+zmq::socket_t zmq_sub_sock_(zmqcntx_, ZMQ_SUB);         /**< The socket to get events from server. */
 
-void blit(SDL_Surface* src_surf,
-          const SDL_Rect* src_rect,
-          SDL_Rect* dst_rect,
-          zmq::socket_t sock);
+//---------------------------------------------------------------------------------------------
+
+inline bool should_quit() { return quit_client_loop; }  /**< Called by client loop for exit. */
+
+inline void do_quit() { quit_client_loop = true; }      /**< Causes client loop to exit.*/
+
+/** @brief base handler for all SDL_Events, distributes or ignores them as needed. */
+void handler(const SDL_Event* evt);
+
+/** @brief base handler for all Window Events. */
+void handle_window_event(const SDL_Event* event);
+
+/** @brief silly handler for mouse movement. */
+void handle_mouse_motion(const SDL_Event* evt);
+
+/**
+ * @brief Sends a surface to the server for rendering.
+ * @param src_surf  the image to be sent
+ * @param src_rect  the wanted portion of the image
+ * @param dst_rect  where to render on the window
+ */
+void blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect);
 
 #endif /* CLIENT_HPP_ */

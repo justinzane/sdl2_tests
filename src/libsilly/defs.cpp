@@ -27,7 +27,7 @@
 std::vector<Uint8> event2vec(SDL_Event* evt) {
     std::vector<Uint8> vec;
     for (Uint32 i = 0; i < sizeof(SDL_Event); i++) {
-        vec[i] = ((Uint8*)evt)[i];
+        vec.push_back( ((Uint8*)evt)[i] );
     }
     vec.shrink_to_fit();
     return vec;

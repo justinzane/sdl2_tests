@@ -29,9 +29,9 @@
 #include <signal.h>
 
 int main() {
-    fprintf(stdout, "client: started ...\n");
+    fprintf(stdout, "daemon: started ...\n");
     winmgr& wm = winmgr::get_winmgr();
-    fprintf(stdout, "client: got winmgr& ...\n");
+    fprintf(stdout, "daemon: got winmgr& ...\n");
 
     wm.listener_();
 

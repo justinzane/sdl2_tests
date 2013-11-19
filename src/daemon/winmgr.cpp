@@ -33,7 +33,7 @@
 bool winmgr::stop_listening_ = false;
 
 winmgr::winmgr() :
-    zmqcntx_(1),
+    zmqcntx_(2),
     zmq_pull_sock_(zmqcntx_, ZMQ_PULL),
     zmq_pub_sock_(zmqcntx_, ZMQ_PUB)
 {
@@ -103,12 +103,12 @@ void winmgr::render_() {
 }
 
 void winmgr::listener_() {
+    bool got_render_req = false;
     while (!(stop_listening_)) {
         // Get SDL_Events and publish them.
         SDL_Event evt;
         int poll_result = SDL_PollEvent(&evt);
         if (poll_result == 1) {     // If poll_result == 0, no event, move along
-            zmq::message_t evt_msg;
             std::vector<Uint8> evt_vec = event2vec(&evt);
             msgpack::sbuffer sbuf;
             msgpack::pack(sbuf, evt_vec);
@@ -121,22 +121,24 @@ void winmgr::listener_() {
         // Handle Rendering requests from clients.
         zmq::message_t render_req;
         try {
-            zmq_pull_sock_.recv(&render_req, ZMQ_NOBLOCK);
+            got_render_req = zmq_pull_sock_.recv(&render_req, ZMQ_NOBLOCK);
         }
         catch (zmq::error_t &e) {
             if (e.num() != EAGAIN) {
                 fprintf(stderr, "ZMQ Error: %d %s\n", e.num(), e.what()); break;
             }
         }
-        msgpack::unpacked unpacked;     // Unpack the msgpacked request
-        msgpack::unpack(&unpacked, reinterpret_cast<char*>(render_req.data()), render_req.size());
-        msgpack::object obj = unpacked.get();
-        std::vector<Uint32> bv;         // convert it back into blit params
-        obj.convert(&bv);
-        std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> bp = vec2blitparams(bv);
-        SDL_Surface src_surf = std::get<0>(bp);
-        SDL_Rect src_rect = std::get<1>(bp);
-        SDL_Rect dst_rect = std::get<2>(bp);
-        blit_(src_surf, src_rect, dst_rect);
+        if (got_render_req) {
+            msgpack::unpacked unpacked;     // Unpack the msgpacked request
+            msgpack::unpack(&unpacked, reinterpret_cast<char*>(render_req.data()), render_req.size());
+            msgpack::object obj = unpacked.get();
+            std::vector<Uint32> bv;         // convert it back into blit params
+            obj.convert(&bv);
+            std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> bp = vec2blitparams(bv);
+            SDL_Surface src_surf = std::get<0>(bp);
+            SDL_Rect src_rect = std::get<1>(bp);
+            SDL_Rect dst_rect = std::get<2>(bp);
+            blit_(src_surf, src_rect, dst_rect);
+        }
     }
 }
