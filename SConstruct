@@ -192,6 +192,7 @@ env['LIBPATH'] = ['/usr/lib', '/usr/lib64', '/usr/local/lib', ]
 env.ParseConfig('pkg-config --cflags --libs sdl2')
 env.ParseConfig('pkg-config --cflags --libs SDL2_image')
 env.AppendUnique(LIBS="pthread")
+env.AppendUnique(LIBS="gcrypt")
 env.AppendUnique(LIBS="SDL2")
 env.AppendUnique(LIBS="SDL2_image")
 env.AppendUnique(LIBS="zmq")

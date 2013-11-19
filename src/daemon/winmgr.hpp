@@ -95,6 +95,7 @@ class winmgr {
 
         //zmq stuff
         zmq::context_t zmqcntx_;
+        zmq::socket_t zmq_rep_sock_;        /**< Socket that "replies" to client commands. */
         zmq::socket_t zmq_pull_sock_;       /**< Socket that "pulls" images to be rendered. */
         zmq::socket_t zmq_pub_sock_;        /**< Socket that "publishes" events to clients. */
         static bool stop_listening_;

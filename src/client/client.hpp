@@ -31,17 +31,25 @@
 #include <msgpack.hpp>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unordered_map>
+#include <tuple>
 
-static bool quit_client_loop = false;                   /**< Counts cows by satellite. */
-zmq::context_t zmqcntx_(2);                             /**< The only client ZMQ context. */
-zmq::socket_t zmq_push_sock_(zmqcntx_, ZMQ_PUSH);       /**< The socket to push to server. */
-zmq::socket_t zmq_sub_sock_(zmqcntx_, ZMQ_SUB);         /**< The socket to get events from server. */
+// Variables ----------------------------------------------------------------------------------
+static bool quit_client_loop = false;               /**< Counts cows by satellite. */
+zmq::context_t zmqcntx_(3);                         /**< The only client ZMQ context. */
+zmq::socket_t zmq_req_sock_(zmqcntx_, ZMQ_REQ);     /**< The socket to send commands to server. */
+zmq::socket_t zmq_push_sock_(zmqcntx_, ZMQ_PUSH);   /**< The socket to push images to server. */
+zmq::socket_t zmq_sub_sock_(zmqcntx_, ZMQ_SUB);     /**< The socket to get events from server. */
+/** A simplistic cache for images sent to server, intented to limit redundant messages. */
+std::unordered_map<long long, std::vector<Uint32> > surf_cache {};
 
-//---------------------------------------------------------------------------------------------
 
-inline bool should_quit() { return quit_client_loop; }  /**< Called by client loop for exit. */
+// Functions ----------------------------------------------------------------------------------
+/** @brief Called by client loop for exit. */
+inline bool should_quit() { return quit_client_loop; }
 
-inline void do_quit() { quit_client_loop = true; }      /**< Causes client loop to exit.*/
+/** @brief Causes client loop to exit.*/
+void do_quit();
 
 /** @brief base handler for all SDL_Events, distributes or ignores them as needed. */
 void handler(const SDL_Event* evt);
@@ -51,6 +59,9 @@ void handle_window_event(const SDL_Event* event);
 
 /** @brief silly handler for mouse movement. */
 void handle_mouse_motion(const SDL_Event* evt);
+
+/** @brief returns true if argument was added to cache, false if it already in cache. */
+bool cache_blitparam_vec(std::vector<Uint32>& bp_vec);
 
 /**
  * @brief Sends a surface to the server for rendering.

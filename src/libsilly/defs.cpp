@@ -22,6 +22,19 @@
  */
 
 #include "defs.hpp"
+#include <emmintrin.h>
+
+long long get_vec_hash(std::vector<Uint32>& vec) {
+    long long digest;
+    gcry_md_hash_buffer(GCRY_MD_MD5, (void*)&digest, (void*)vec.data(), vec.size());
+    return digest;
+}
+
+long long get_vec_hash(std::vector<Uint8>& vec) {
+    long long digest;
+    gcry_md_hash_buffer(GCRY_MD_MD5, (void*)&digest, (void*)vec.data(), vec.size());
+    return digest;
+}
 
 /** @todo Modify this to use OpenMP/Cilk+/OpenACC/magic. */
 std::vector<Uint8> event2vec(SDL_Event* evt) {

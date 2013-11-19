@@ -34,12 +34,15 @@ bool winmgr::stop_listening_ = false;
 
 winmgr::winmgr() :
     zmqcntx_(2),
+    zmq_rep_sock_(zmqcntx_, ZMQ_REP),
     zmq_pull_sock_(zmqcntx_, ZMQ_PULL),
     zmq_pub_sock_(zmqcntx_, ZMQ_PUB)
 {
 
     // Start setting up ZMQ -------------------------------------------------------------------
     int linger = ZMQ_SOCK_LINGER;
+    zmq_rep_sock_.bind(SRVR_REP_ADDR);
+    zmq_rep_sock_.setsockopt(ZMQ_LINGER, (void*)&linger, sizeof(linger));
     zmq_pull_sock_.bind(SRVR_PULL_ADDR);
     zmq_pull_sock_.setsockopt(ZMQ_LINGER, (void*)&linger, sizeof(linger));
     zmq_pub_sock_.bind(SRVR_PUB_ADDR);
@@ -85,7 +88,9 @@ winmgr::winmgr() :
 
 winmgr::~winmgr() {
     stop_listening_ = true;
+    zmq_rep_sock_.close();
     zmq_pull_sock_.close();
+    zmq_pub_sock_.close();
     zmqcntx_.close();
     SDL_Quit();
 }
@@ -104,6 +109,7 @@ void winmgr::render_() {
 
 void winmgr::listener_() {
     bool got_render_req = false;
+    bool got_cmd_msg = false;
     while (!(stop_listening_)) {
         // Get SDL_Events and publish them.
         SDL_Event evt;
@@ -113,21 +119,14 @@ void winmgr::listener_() {
             msgpack::sbuffer sbuf;
             msgpack::pack(sbuf, evt_vec);
             try {
-                size_t bytes_sent = zmq_pub_sock_.send(sbuf.data(), sbuf.size(), 0);
+                zmq_pub_sock_.send(sbuf.data(), sbuf.size(), 0);
             } catch (zmq::error_t &e) {
                 fprintf(stderr, "ZMQ Error: %d %s\n", e.num(), e.what());
             }
         }
-        // Handle Rendering requests from clients.
+        // Handle Rendering requests from clients. --------------------------------------------
         zmq::message_t render_req;
-        try {
-            got_render_req = zmq_pull_sock_.recv(&render_req, ZMQ_NOBLOCK);
-        }
-        catch (zmq::error_t &e) {
-            if (e.num() != EAGAIN) {
-                fprintf(stderr, "ZMQ Error: %d %s\n", e.num(), e.what()); break;
-            }
-        }
+        got_render_req = zmq_pull_sock_.recv(&render_req, ZMQ_NOBLOCK);
         if (got_render_req) {
             msgpack::unpacked unpacked;     // Unpack the msgpacked request
             msgpack::unpack(&unpacked, reinterpret_cast<char*>(render_req.data()), render_req.size());
@@ -139,6 +138,23 @@ void winmgr::listener_() {
             SDL_Rect src_rect = std::get<1>(bp);
             SDL_Rect dst_rect = std::get<2>(bp);
             blit_(src_surf, src_rect, dst_rect);
+        }
+        // Check for commands from clients ----------------------------------------------------
+        zmq::message_t cmd_msg;
+        got_cmd_msg = zmq_rep_sock_.recv(&cmd_msg, ZMQ_NOBLOCK);
+        if (got_cmd_msg) {
+            msgpack::unpacked unpacked;
+            msgpack::unpack(&unpacked, reinterpret_cast<char*>(cmd_msg.data()), cmd_msg.size());
+            msgpack::object obj = unpacked.get();
+            std::string cmd;
+            obj.convert(&cmd);
+            if (cmd == "quit") {
+                std::string reply = "quitting";
+                msgpack::sbuffer sbuf;
+                msgpack::pack(sbuf, reply);
+                zmq_rep_sock_.send((void*)sbuf.data(), sbuf.size(), 0);
+                stop_listening_ = true;
+            }
         }
     }
 }

@@ -32,11 +32,12 @@
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/usr/include/SDL2"/>
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
-									<listOptionValue builtIn="false" value="/usr/bin/../lib/clang/3.3/include"/>
-									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/usr/lib64/gcc/x86_64-unknown-linux-gnu/4.8.2/../../../../include/c++/4.8.2/x86_64-unknown-linux-gnu"/>
-									<listOptionValue builtIn="false" value="/usr/lib64/gcc/x86_64-unknown-linux-gnu/4.8.2/../../../../include/c++/4.8.2"/>
-									<listOptionValue builtIn="false" value="/usr/lib64/gcc/x86_64-unknown-linux-gnu/4.8.2/../../../../include/c++/4.8.2/backward"/>
+									<listOptionValue builtIn="false" value="/usr/lib/clang/3.3/include"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.8.2/x86_64-unknown-linux-gnu"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.8.2/backward"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.8.2"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.8.2/tr1"/>
+									<listOptionValue builtIn="false" value="/usr/include/c++/4.8.2/tr2"/>
 								</option>
 								<option id="org.eclipse.cdt.build.core.settings.holder.symbols.1347280565" name="Symbols" superClass="org.eclipse.cdt.build.core.settings.holder.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="_REENTRANT"/>

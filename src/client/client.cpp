@@ -238,23 +238,57 @@ void handle_mouse_motion(const SDL_Event* evt) {
     blit(src_surf, &src_rect, &dst_rect);
 }
 
-void blit(SDL_Surface* src_surf,
-          const SDL_Rect* src_rect,
-          SDL_Rect* dst_rect) {
-    std::vector<Uint32> bp = blitparams2vec(src_surf, src_rect, dst_rect);
+// Image Rendering ----------------------------------------------------------------------------
+
+bool cache_blitparam_vec(std::vector<Uint32>& bp_vec) {
+    auto was_inserted = surf_cache.emplace(get_vec_hash(bp_vec), bp_vec);
+    return std::get<1>(was_inserted);
+}
+
+Uint64 dup_count = 0;
+
+void blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect) {
+    std::vector<Uint32> bp_vec = blitparams2vec(src_surf, src_rect, dst_rect);
+    if (!cache_blitparam_vec(bp_vec)) {
+        if ((dup_count++ % 100) == 0) {
+            fprintf(stderr, ">>>>    dup_count = %lu\n", dup_count);
+        }
+    }
     msgpack::sbuffer sbuf;
-    msgpack::pack(sbuf, bp);
+    msgpack::pack(sbuf, bp_vec);
     try {
         size_t bytes_sent __attribute__((unused));
         bytes_sent = zmq_push_sock_.send(sbuf.data(), sbuf.size(), 0);
     } catch (zmq::error_t &e) {
-        fprintf(stderr, "Error[blit]  %d, %s\n", e.num(), e.what());
+        fprintf(stderr, "SDL Error %d %s\n", e.num(), e.what());
     }
 }
 
+// Quitting -----------------------------------------------------------------------------------
+void do_quit() {
+    std::string quit = "quit";
+    msgpack::sbuffer sbuf;
+    msgpack::pack(sbuf, quit);
+    bool server_quitting = false;
+    while(!server_quitting) {
+        zmq_req_sock_.send((void*)sbuf.data(), sbuf.size(), 0);
+        zmq::message_t reply_msg;
+        zmq_req_sock_.recv(&reply_msg, 0);
+        msgpack::unpacked unpacked;
+        msgpack::unpack(&unpacked, reinterpret_cast<char*>(reply_msg.data()), reply_msg.size());
+        msgpack::object obj = unpacked.get();
+        std::string reply;
+        obj.convert(&reply);
+        if (reply == "quitting") { server_quitting = true; }
+    }
+    quit_client_loop = true;
+}
 /*--------------------------------------------------------------------------------------------*/
 
 int main() {
+    // Setup ZMQ PUSH for sending bitmaps to server
+    zmq_req_sock_.bind(CLNT_REQ_ADDR);
+    zmq_req_sock_.connect(SRVR_REP_ADDR);
     // Setup ZMQ PUSH for sending bitmaps to server
     zmq_push_sock_.bind(CLNT_PUSH_ADDR);
     zmq_push_sock_.connect(SRVR_PULL_ADDR);
@@ -282,12 +316,10 @@ int main() {
 
     fprintf(stdout, ">>>>    Left Main Loop, Quitting.\n");
     // Cleanup after ourselves.
-    if (zmq_push_sock_.connected()) {
-        zmq_push_sock_.disconnect(SRVR_PULL_ADDR);
-    }
-    if (zmq_sub_sock_.connected()) {
-        zmq_sub_sock_.disconnect(SRVR_PULL_ADDR);
-    }
+    if (zmq_req_sock_.connected())  { zmq_req_sock_.disconnect(SRVR_REP_ADDR); }
+    if (zmq_push_sock_.connected()) { zmq_push_sock_.disconnect(SRVR_PULL_ADDR); }
+    if (zmq_sub_sock_.connected())  { zmq_sub_sock_.disconnect(SRVR_PUB_ADDR); }
+    zmq_req_sock_.close();
     zmq_push_sock_.close();
     zmq_sub_sock_.close();
     zmqcntx_.close();
