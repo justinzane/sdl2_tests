@@ -30,22 +30,34 @@ void surf_diff(SDL_Surface* a, SDL_Surface* b, SDL_Surface* diff) {
         throw std::invalid_argument("Must be same size.");
     }
     SDL_LockSurface(a); SDL_LockSurface(b); SDL_LockSurface(diff);
-    for (int i = 0; i < (a->h * a->w); i++) {
-        ((Uint32*)diff->pixels)[i] = abs(((Uint32*)a->pixels)[i] - ((Uint32*)b->pixels)[i]);
+    for (int i = 0; i < (a->h * a->w * 4); i++) {
+        ((Uint8*)diff->pixels)[i] = abs(((Uint8*)a->pixels)[i] - ((Uint8*)b->pixels)[i]);
     }
     SDL_UnlockSurface(a); SDL_UnlockSurface(b); SDL_UnlockSurface(diff);
 }
 
 void surf_change_hue(SDL_Surface* surf, double hue_adj_deg) {
-    pixar_t<double> surfpix = surf2pixar(surf);
-    for (std::valarray<subpixar_t<double>> row: surfpix) {
-        for (subpixar_t<double> pix: row) {
-            subpixar_t<double> laba = rgba2laba(pix);
-            laba_change_hue(laba, hue_adj_deg);
-            pix = laba2rgba(laba);
-        }
+    assert(surf != nullptr &&
+           surf->h > 0 &&
+           surf->w > 0);
+    const Uint32 numsubpix = (surf->h * surf->w * 4);
+    double* surfpix = static_cast<double*> (::operator new (sizeof(double[numsubpix])));;
+    surf2pixar(surf, surfpix);
+    for (int i = 0; i < (surf->h * surf->w); i++) {
+        double* curpix = surfpix + i * 4;
+        rgba2laba(curpix);
+        laba_change_hue(curpix, hue_adj_deg);
+        laba2rgba(curpix);
     }
-    pixar2surf(surfpix);
+    pixar2surf(surfpix, surf);
+}
+
+void laba_change_hue(double* laba, double hue_adj_deg) {
+    double hue_adj = hue_adj_deg * M_PI / 180.0;
+    double hue = std::atan2(laba[1], laba[2]) + hue_adj;
+    double chroma = std::sqrt(std::pow(laba[1], 2.0) + std::pow(laba[2], 2.0));
+    laba[1] = (chroma * std::sin(hue));
+    laba[2] = (chroma * std::cos(hue));
 }
 
 void laba_change_hue(subpixar_t<double>& laba, double hue_adj_deg) {
@@ -56,31 +68,50 @@ void laba_change_hue(subpixar_t<double>& laba, double hue_adj_deg) {
     laba[2] = (chroma * std::cos(hue));
 }
 
-subpixar_t<double> laba2rgba(const subpixar_t<double> laba) {
-    return xyza2rgba(laba2xyza(laba));
+void laba2rgba(double* pixar) {
+    laba2xyza(pixar);
+    xyza2rgba(pixar);
 }
 
-subpixar_t<double> rgba2laba(const subpixar_t<double> rgba) {
-    return xyza2laba(rgba2xyza(rgba));
+subpixar_t<double> laba2rgba(subpixar_t<double>& laba) {
+    subpixar_t<double> xyza = laba2xyza(laba);
+    return xyza2rgba(xyza);
 }
 
-subpixar_t<double> laba2xyza(const subpixar_t<double> laba) {
-    double Lstar, astar, bstar, alpha, x, y, z;
-    Lstar = laba[0] / 255.0; astar = laba[1] / 255.0;
-    bstar = laba[2] / 255.0; alpha = laba[3] / 255.0;
+void rgba2laba(double* pixar) {
+    rgba2xyza(pixar);
+    xyza2laba(pixar);
+}
 
+subpixar_t<double> rgba2laba(subpixar_t<double>& rgba) {
+    subpixar_t<double> xyza = rgba2xyza(rgba);
+    return xyza2laba(xyza);
+}
+
+void laba2xyza(double* pixar) {
 /*       X = Xn * ( P + a* / 500 )^3
  *       Y = Yn * P^3
  *       Z = Zn * ( P - b* / 200 )^3
  * where P = (L* + 16) / 116 */
-    double p = (Lstar + 16.0) / 116.0;
-    x = X_d65 * std::pow((p + astar / 500.0), 3);
+    double x, y, z;
+    double p = (pixar[0] + 16.0) / 116.0;
+    x = X_d65 * std::pow((p + pixar[1] / 500.0), 3);
     y = Y_d65 * std::pow(p, 3);
-    z = Z_d65 * std::pow((p - bstar / 200.0), 3);
+    z = Z_d65 * std::pow((p - pixar[2] / 200.0), 3);
+    pixar[0] = x; pixar[1] = y; pixar[2] = z; // pixar[3] = unchanged alpha
+}
 
+subpixar_t<double> laba2xyza(subpixar_t<double>& laba) {
     subpixar_t<double> xyza (4);
-    xyza[0] = (double)x; xyza[1] = (double)y;
-    xyza[2] = (double)z; xyza[3] = (double)alpha;
+/*       X = Xn * ( P + a* / 500 )^3
+ *       Y = Yn * P^3
+ *       Z = Zn * ( P - b* / 200 )^3
+ * where P = (L* + 16) / 116 */
+    double p = (laba[0] + 16.0) / 116.0;
+    xyza[0] = X_d65 * std::pow((p + laba[1] / 500.0), 3);
+    xyza[1] = Y_d65 * std::pow(p, 3);
+    xyza[2] = Z_d65 * std::pow((p - laba[2] / 200.0), 3);
+    xyza[3] = laba[3];
     return xyza;
 }
 
@@ -92,62 +123,78 @@ double _f_(double x) {
     }
 }
 
-subpixar_t<double> xyza2laba(const subpixar_t<double> xyza) {
-    double Lstar, astar, bstar, alpha, x, y, z;
-    x = (double)xyza[0]; y = (double)xyza[2];
-    z = (double)xyza[2]; alpha = (double)xyza[3];
-
-    if ((y / Y_d65) > 0.008856) {
-        Lstar = 116.0 * std::pow((y / Y_d65), 1.0/3.0) - 16.0;
+void xyza2laba(double* pixar) {
+    double Lstar, astar, bstar;
+    if ((pixar[1] / Y_d65) > 0.008856) {
+        Lstar = 116.0 * std::pow((pixar[1] / Y_d65), 1.0/3.0) - 16.0;
     } else {
-        Lstar = 903.3 * y / Y_d65;
+        Lstar = 903.3 *           pixar[1] / Y_d65;
     }
-    astar = 500.0 * (_f_(x / X_d65) - _f_(y / Y_d65));
-    bstar = 200.0 * (_f_(y / Y_d65) - _f_(z / Z_d65));
+    astar = 500.0 * (_f_(pixar[0] / X_d65) - _f_(pixar[1] / Y_d65));
+    bstar = 200.0 * (_f_(pixar[1] / Y_d65) - _f_(pixar[2] / Z_d65));
+    pixar[0] = Lstar; pixar[1] = astar; pixar[2] = bstar; // pixar[3] = unchanged alpha
+}
 
+subpixar_t<double> xyza2laba(subpixar_t<double>& xyza) {
     subpixar_t<double> laba (4);
-    laba[0] = (double)(Lstar); laba[1] = (double)(astar);
-    laba[2] = (double)(bstar); laba[3] = (double)(alpha);
+    if ((xyza[1] / Y_d65) > 0.008856) {
+        laba[0] = 116.0 * std::pow((xyza[1] / Y_d65), 1.0/3.0) - 16.0;
+    } else {
+        laba[0] = 903.3 *           xyza[1] / Y_d65;
+    }
+    laba[1] = 500.0 * (_f_(xyza[0] / X_d65) - _f_(xyza[1] / Y_d65));
+    laba[2] = 200.0 * (_f_(xyza[1] / Y_d65) - _f_(xyza[2] / Z_d65));
+    laba[3] = xyza[3];
     return laba;
 }
 
-subpixar_t<double> rgba2xyza(const subpixar_t<double> rgba) {
-    double x, y, z, red, grn, blu, alp;
-    red = (double)rgba[0]; grn = (double)rgba[1];
-    blu = (double)rgba[2]; alp = (double)rgba[3];
+void rgba2xyza(double* pixar) {
+    double x, y, z;
+    x = RGB2XYZ_MAT[0][0] * pixar[0] + RGB2XYZ_MAT[0][1] * pixar[1] + RGB2XYZ_MAT[0][2] * pixar[2];
+    y = RGB2XYZ_MAT[1][0] * pixar[0] + RGB2XYZ_MAT[1][1] * pixar[1] + RGB2XYZ_MAT[1][2] * pixar[2];
+    z = RGB2XYZ_MAT[2][0] * pixar[0] + RGB2XYZ_MAT[2][1] * pixar[1] + RGB2XYZ_MAT[2][2] * pixar[2];
+    pixar[0] = x; pixar[1] = y; pixar[2] = z; // pixar[3] = unchanged alpha
+}
 
-    std::valarray<double> RGB {red, grn, blu};
-    x = RGB2XYZ_MAT[0][0] * RGB[0] + RGB2XYZ_MAT[0][1] * RGB[1] + RGB2XYZ_MAT[0][2] * RGB[2];
-    y = RGB2XYZ_MAT[1][0] * RGB[0] + RGB2XYZ_MAT[1][1] * RGB[1] + RGB2XYZ_MAT[1][2] * RGB[2];
-    z = RGB2XYZ_MAT[2][0] * RGB[0] + RGB2XYZ_MAT[2][1] * RGB[1] + RGB2XYZ_MAT[2][2] * RGB[2];
-
+subpixar_t<double> rgba2xyza(subpixar_t<double>& rgba) {
     subpixar_t<double> xyza (4);
-    xyza[0] = (double)x; xyza[1] = (double)y;
-    xyza[2] = (double)z; xyza[3] = (double)alp;
+    xyza[0] = RGB2XYZ_MAT[0][0] * rgba[0] + RGB2XYZ_MAT[0][1] * rgba[1] + RGB2XYZ_MAT[0][2] * rgba[2];
+    xyza[1] = RGB2XYZ_MAT[1][0] * rgba[0] + RGB2XYZ_MAT[1][1] * rgba[1] + RGB2XYZ_MAT[1][2] * rgba[2];
+    xyza[2] = RGB2XYZ_MAT[2][0] * rgba[0] + RGB2XYZ_MAT[2][1] * rgba[1] + RGB2XYZ_MAT[2][2] * rgba[2];
+    xyza[3] = rgba[3];
     return xyza;
 }
 
-subpixar_t<double> xyza2rgba(const subpixar_t<double> xyza) {
-    double x, y, z, red, grn, blu, alp;
-    x = (double)xyza[0]; y = (double)xyza[1];
-    z = (double)xyza[2]; alp = (double)xyza[3];
+void xyza2rgba(double* pixar) {
+    double r, g, b;
+    r = XYZ2RGB_MAT[0][0] * pixar[0] + XYZ2RGB_MAT[0][1] * pixar[1] + XYZ2RGB_MAT[0][2] * pixar[2];
+    g = XYZ2RGB_MAT[1][0] * pixar[0] + XYZ2RGB_MAT[1][1] * pixar[1] + XYZ2RGB_MAT[1][2] * pixar[2];
+    b = XYZ2RGB_MAT[2][0] * pixar[0] + XYZ2RGB_MAT[2][1] * pixar[1] + XYZ2RGB_MAT[2][2] * pixar[2];
+    pixar[0] = r; pixar[1] = g; pixar[2] = b; //pixar[3] = unchanged alpha
+}
 
-    std::valarray<double> XYZ {x, y, z};
-    red = XYZ2RGB_MAT[0][0] * XYZ[0] + XYZ2RGB_MAT[0][1] * XYZ[1] + XYZ2RGB_MAT[0][2] * XYZ[2];
-    grn = XYZ2RGB_MAT[1][0] * XYZ[0] + XYZ2RGB_MAT[1][1] * XYZ[1] + XYZ2RGB_MAT[1][2] * XYZ[2];
-    blu = XYZ2RGB_MAT[2][0] * XYZ[0] + XYZ2RGB_MAT[2][1] * XYZ[1] + XYZ2RGB_MAT[2][2] * XYZ[2];
-
+subpixar_t<double> xyza2rgba(subpixar_t<double>& xyza) {
     subpixar_t<double> rgba (4);
-    rgba[0] = (double)red; rgba[1] = (double)grn;
-    rgba[2] = (double)blu; rgba[3] = (double)alp;
+    rgba[0] = XYZ2RGB_MAT[0][0] * xyza[0] + XYZ2RGB_MAT[0][1] * xyza[1] + XYZ2RGB_MAT[0][2] * xyza[2];
+    rgba[1] = XYZ2RGB_MAT[1][0] * xyza[0] + XYZ2RGB_MAT[1][1] * xyza[1] + XYZ2RGB_MAT[1][2] * xyza[2];
+    rgba[2] = XYZ2RGB_MAT[2][0] * xyza[0] + XYZ2RGB_MAT[2][1] * xyza[1] + XYZ2RGB_MAT[2][2] * xyza[2];
+    rgba[3] = xyza[3];
     return rgba;
 }
 
-SDL_Surface pixar2surf(pixar_t<double> pixar) {
+void pixar2surf(double* pixar, SDL_Surface* surf) {
+    SDL_LockSurface(surf);
+    Uint8* pix = (Uint8*)surf->pixels;
+    for (Uint32 i = 0; i < (surf->h * surf->w * 4); i++) {
+        pix[i] = (Uint8)(pixar[i] * 255.0);
+    }
+    SDL_UnlockSurface(surf);
+}
+
+void pixar2surf(pixar_t<double>& pixar, SDL_Surface* surf) {
     const Uint32 h = pixar.size();
     const Uint32 w = pixar[0].size();
     const Uint32 chans = pixar[0][0].size();
-    SDL_Surface* surf = SDL_CreateRGBSurface(0, w, h, BPP, RMASK, GMASK, BMASK, AMASK);
     SDL_LockSurface(surf);
     Uint32* intpix = (Uint32*)surf->pixels;
     for (Uint32 y = 0; y < h; y++) {
@@ -164,7 +211,25 @@ SDL_Surface pixar2surf(pixar_t<double> pixar) {
         }
     }
     SDL_UnlockSurface(surf);
-    return *surf;
+}
+
+void surf2pixar(SDL_Surface* surf, double* pixar) {
+    assert(surf != nullptr &&
+           surf->h > 0 && surf->w > 0 &&
+           surf->format->BitsPerPixel == BPP &&
+           surf->format->Amask == AMASK &&
+           surf->format->Rmask == RMASK &&
+           surf->format->Gmask == GMASK &&
+           surf->format->Bmask == BMASK);
+    if (pixar != nullptr) {
+        free((void*)pixar);
+    }
+    pixar = (double*)malloc((surf->h * surf->w * 4 * sizeof(double)));
+    SDL_LockSurface(surf);
+    for (int i = 0; i < (surf->h * surf->w * 4); i++) {
+        pixar[i] = ( (double) ((Uint8*)surf->pixels)[i] ) / 255.0;
+    }
+    SDL_UnlockSurface(surf);
 }
 
 pixar_t<double> surf2pixar(SDL_Surface* surf) {
@@ -177,24 +242,22 @@ pixar_t<double> surf2pixar(SDL_Surface* surf) {
            surf->format->Gmask == GMASK &&
            surf->format->Bmask == BMASK);
 
+    SDL_LockSurface(surf);
     const Uint32* intpix = (Uint32*)surf->pixels;
     const Uint32 h = surf->h; const Uint32 w = surf->w; const Uint32 chans = 4;
 
-    pixar_t<double> pixar =
-        valarray<valarray<valarray<double> > >(h);
+    pixar_t<double> pixar = valarray<valarray<valarray<double> > >(h);
     for (Uint32 y = 0; y < h; y++) {
         pixar[y] = valarray<valarray<double> >(w);
         for (Uint32 x = 0; x < w; x++) {
             pixar[y][x] = valarray<double>(chans);
+            Uint8* pixptr = (Uint8*) (intpix + (y * w + x));
             for (Uint32 c = 0; c < chans; c++) {
-                if (is_integral<double>::value) {
-                    pixar[y][x][c] = (double)(((Uint8*) (intpix + (y * w + x)))[c]);
-                } else if (is_floating_point<double>::value) {
-                    pixar[y][x][c] = ((double)(((Uint8*) (intpix + (y * w + x)))[c])) / 255.0;
-                }
+                pixar[y][x][c] = (double)pixptr[c] / 255.0;
             }
         }
     }
+    SDL_UnlockSurface(surf);
     return pixar;
 }
 

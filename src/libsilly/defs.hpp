@@ -105,82 +105,86 @@ void surf_diff(SDL_Surface* a, SDL_Surface* b, SDL_Surface* diff);
 
 void surf_change_hue(SDL_Surface* surf, double hue_adj_deg);
 
+void laba_change_hue(double* pixar, double hue_adj_deg);
 void laba_change_hue(subpixar_t<double>& laba, double hue_adj_deg);
 
 /**
  * @brief converts an CIEL*a*b*A pixel into a RGBA pixel.
  * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
  */
-subpixar_t<double> laba2rgba(const subpixar_t<double> laba);
+subpixar_t<double> laba2rgba(subpixar_t<double>& laba);
+void laba2rgba(double* pixar);
 
 /**
  * @brief converts an RGBA pixel into a CIEL*a*b*A pixel.
  * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
  */
-subpixar_t<double> rgba2laba(const subpixar_t<double> rgba);
+subpixar_t<double> rgba2laba(subpixar_t<double>& rgba);
+void rgba2laba(double* pixar);
 
 /**
  * @brief converts an CIEL*a*b*A pixel into a CIEXYZA pixel.
  * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
  */
-subpixar_t<double> laba2xyza(const subpixar_t<double> laba);
+subpixar_t<double> laba2xyza(subpixar_t<double>& laba);
+void laba2xyza(double* pixar);
 
 /**
  * @brief converts a CIEXYZA pixel into a CIEL*a*b*A pixel.
  * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
  */
-subpixar_t<double> xyza2laba(const subpixar_t<double> xyza);
+subpixar_t<double> xyza2laba(subpixar_t<double>& xyza);
+void xyza2laba(double* pixar);
 
 /**
  * @brief converts an RGBA pixel into a CIEXYZA pixel.
  * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
  */
-subpixar_t<double> rgba2xyza(const subpixar_t<double> rgba);
+subpixar_t<double> rgba2xyza(subpixar_t<double>& rgba);
+void rgba2xyza(double* pixar);
 
-/**
- * @brief converts a CIEXYZA pixel into an RGBA pixel.
- * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
- */
-subpixar_t<double> xyza2rgba(const subpixar_t<double> xyza);
+/** @brief converts a CIEXYZA pixel into an RGBA pixel.
+ *  @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB */
+subpixar_t<double> xyza2rgba(subpixar_t<double>& xyza);
+void xyza2rgba(double* pixar);
 
-/**
- * @brief Turn a pixar_t nested valarray into an SDL_Surface of format RGBA8888.
- */
-SDL_Surface pixar2surf(pixar_t<double> pixar);
+/** @brief Turn a pixar_t nested valarray into an SDL_Surface of format RGBA8888. */
+void pixar2surf(pixar_t<double>& pixar, SDL_Surface* surf);
 
-/**
- * @brief Construct a convenient std::valarray from the pixel data in an SDL_Surface.
+/** @brief  Fill the surf with the data from pixar.
+ * @details Denormalizes the 0.0-1.0 data to the 0-255 range. */
+void pixar2surf(double* pixar, SDL_Surface* surf);
+
+/**@brief Construct a convenient std::valarray from the pixel data in an SDL_Surface.
  * @param surf  **Must be in RGBA8888 format**
- * @return      The valarray.
- */
+ * @return      The valarray.*/
 pixar_t<double> surf2pixar(SDL_Surface* surf);
 
-/**
- * @brief Gets the md5 hash of the vector contents to the back of the vector.
+/** @brief  Fill pixar with the data from surf.
+ * @details frees the contents of pixar, then normalizes the 0-255 data to the 0.0-1.0 range. */
+void surf2pixar(SDL_Surface* surf, double* pixar);
+
+/**@brief Gets the md5 hash of the vector contents to the back of the vector.
  * @note The MD5 algorithm was chosen because it is only 4 Uint32s. This is for
- * redundancy reduction, NOT for security.
- */
+ * redundancy reduction, NOT for security. */
 long long get_vec_hash(std::vector<Uint32>& vec);
 long long get_vec_hash(std::vector<Uint8>& vec);
 
-/**
- * @brief Blindly convert an SDL_Event into a vector.
+/**@brief Blindly convert an SDL_Event into a vector.
  * @details Since an SDL_Event is a ~56 byte (currently) union, just put the bytes in a
- * vector for packing with msgpack. Note that this size is subject to change.
- */
+ * vector for packing with msgpack. Note that this size is subject to change. */
 std::vector<Uint8> event2vec(SDL_Event* evt);
 
-/**
- * @brief Blindly convert an a vector to an SDL_Event.
+/**@brief Blindly convert an a vector to an SDL_Event.
  * @details Since an SDL_Event is a ~56 byte (currently) union, just take the bytes from a
- * vector for unpacked with msgpack. Note that this size is subject to change.
- */
+ * vector for unpacked with msgpack. Note that this size is subject to change. */
 SDL_Event vec2event(std::vector<Uint8> vec);
 
 /** @brief Converts everything necessary to call SDL_BlitSurface into a vector. */
 std::vector<Uint32> blitparams2vec(SDL_Surface*    src_surf,
                                    const SDL_Rect* src_rect,
                                    SDL_Rect*       dst_rect);
+
 /** @brief Converts a vector into a tuple of the arguments to SDL_BlitSurface. */
 std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> vec2blitparams(std::vector<Uint32> bv);
 
