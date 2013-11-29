@@ -132,7 +132,8 @@ env['ENV']['TERM'] = os.environ["TERM"]
 if env['cxxtool'] in ("clang++", "clang", "llvm"):
     env['CC'] = 'clang'
     env['CXX'] = "clang++"
-    env.Append(LINKFLAGS="-Wl,-plugin,/usr/lib/LLVMgold.so")
+    env['LD'] = 'llvm-lto'
+    # env.Append(LINKFLAGS="-Wl,-plugin,/usr/lib/LLVMgold.so")
 elif env['cxxtool'] in (None, "", "g++"):
     env['CC'] = "gcc"
     env['CXX'] = "g++"
@@ -187,12 +188,13 @@ if GetOption("help"):
 
 env.MergeFlags(env["extra_flags_config"])
 
-env['CPPPATH'] = ['./src/', '/usr/include/SDL2', '/usr/include', ]
+env['CPPPATH'] = ['./src/', '/usr/include/opencv2', '/usr/include', ]
 env['LIBPATH'] = ['/usr/lib', '/usr/lib64', '/usr/local/lib', ]
-env.ParseConfig('pkg-config --cflags --libs sdl2')
+env.ParseConfig('sdl2-config --cflags --libs')
+env.ParseConfig('pkg-config --libs opencv')
 env.ParseConfig('pkg-config --cflags --libs SDL2_image')
+env.ParseConfig('libgcrypt-config --cflags --libs')
 env.AppendUnique(LIBS="pthread")
-env.AppendUnique(LIBS="gcrypt")
 env.AppendUnique(LIBS="SDL2")
 env.AppendUnique(LIBS="SDL2_image")
 env.AppendUnique(LIBS="zmq")

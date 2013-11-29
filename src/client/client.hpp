@@ -23,16 +23,22 @@
 #ifndef CLIENT_HPP_
 #define CLIENT_HPP_
 
+#define _USE_MATH_DEFINES
+
 #include "client.hpp"
 #include "../libsilly/defs.hpp"
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <zmq.hpp>
 #include <msgpack.hpp>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unordered_map>
 #include <tuple>
+#include <valarray>
 
 // Variables ----------------------------------------------------------------------------------
 static bool quit_client_loop = false;               /**< Counts cows by satellite. */
@@ -42,7 +48,8 @@ zmq::socket_t zmq_push_sock_(zmqcntx_, ZMQ_PUSH);   /**< The socket to push imag
 zmq::socket_t zmq_sub_sock_(zmqcntx_, ZMQ_SUB);     /**< The socket to get events from server. */
 /** A simplistic cache for images sent to server, intented to limit redundant messages. */
 std::unordered_map<long long, std::vector<Uint32> > surf_cache {};
-
+Sint32 win_size[2] {0,0};                           /**< Silly holder for current window size. */
+SDL_Surface* sample_img = nullptr;
 
 // Functions ----------------------------------------------------------------------------------
 /** @brief Called by client loop for exit. */
@@ -60,8 +67,69 @@ void handle_window_event(const SDL_Event* event);
 /** @brief silly handler for mouse movement. */
 void handle_mouse_motion(const SDL_Event* evt);
 
+/** @brief silly handler for text input. */
+void handle_text_input(const SDL_Event* evt);
+
+/** @brief handler for window resizes. */
+void handle_window_resized(const SDL_Event* evt);
+
 /** @brief returns true if argument was added to cache, false if it already in cache. */
 bool cache_blitparam_vec(std::vector<Uint32>& bp_vec);
+
+/**
+ * @brief   Alpha composition of top (RGBA8888) pixel onto bottom pixel using the
+ * Porter-Duff Over method.
+ * @cite    https://en.wikipedia.org/wiki/Alpha_compositing
+ * @todo    OPTIMIZEME via SSE/OpenMP/OpenCL
+ */
+void porter_duff_over(Uint32* top, Uint32* bot, Uint32* cmp);
+
+void surface_blur(SDL_Surface* src, SDL_Surface* dst, Uint8 amount);
+
+/**
+ * @brief Adjust the color of a surface by changing any HSV parameter.
+ * @note  This is a wrapper for individual hue, sat and val functions for performance
+ * raisins.
+ * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
+ * @param surf      The image to be adjusted.
+ * @param hue_diff  The change in hue           0.0f <= hue_diff <  360.0f;
+ * @param sat_diff  The change in saturation    0.0f <= sat_diff <=   1.0f;
+ * @param val_diff  The change in value         0.0f <= val_diff <=   1.0f;
+ */
+void surface_change_hsv(SDL_Surface* src_surf, SDL_Surface* dst_surf,
+                        float hue_diff = 0.0f,
+                        float sat_diff = 0.0f,
+                        float val_diff = 0.0f);
+
+/**
+ * @brief Adjust the color of a surface by changing hue.
+ * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
+ * @param surf      The image to be adjusted.
+ * @param hue_diff  The change in hue           0.0f <= hue_diff <  360.0f;
+ */
+void surface_change_hue(SDL_Surface* src_surf, SDL_Surface* dst_surf, float hue_diff);
+
+/**
+ * @brief Adjust the color of a surface by changing saturation.
+ * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
+ * @param surf      The image to be adjusted.
+ * @param sat_diff  The change in saturation    0.0f <= sat_diff <=   1.0f;
+ */
+void surface_change_sat(SDL_Surface* src_surf, SDL_Surface* dst_surf, float sat_diff);
+
+/**
+ * @brief Adjust the color of a surface by changing value.
+ * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
+ * @param surf      The image to be adjusted.
+ * @param val_diff  The change in value         0.0f <= val_diff <=   1.0f;
+ */
+void surface_change_val(SDL_Surface* src_surf, SDL_Surface* dst_surf, float val_diff);
+
+void surface_compose_overlay(SDL_Surface* top, int top_offset_x, int top_offset_y,
+                             SDL_Surface* bot, int bot_offset_x, int bot_offset_y,
+                             SDL_Surface* dst);
+
+void surface_shadow(SDL_Surface* src, SDL_Surface* dst, int offset_x, int offset_y);
 
 /**
  * @brief Sends a surface to the server for rendering.

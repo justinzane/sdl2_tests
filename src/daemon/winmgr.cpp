@@ -101,9 +101,9 @@ void winmgr::blit_(SDL_Surface& src_surf, SDL_Rect& src_rect, SDL_Rect& dst_rect
 }
 
 void winmgr::render_() {
-    SDL_UpdateTexture(txtr_, NULL, scrn_->pixels, scrn_->pitch);  // always returns 0
+    SDL_UpdateTexture(txtr_, nullptr, scrn_->pixels, scrn_->pitch);  // always returns 0
     SDL_RenderClear (rend_);                                      // always returns 0
-    SDL_RenderCopy(rend_, txtr_, NULL, NULL);                     // always returns 0
+    SDL_RenderCopy(rend_, txtr_, nullptr, nullptr);                     // always returns 0
     SDL_RenderPresent(rend_);
 }
 

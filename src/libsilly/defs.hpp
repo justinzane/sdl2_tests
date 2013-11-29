@@ -19,15 +19,21 @@
  * > http://www.gnu.org/licenses/</a>.
  * @brief		TODO WRITEME
  * @details		TODO WRITEME
+ * @cite http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ * @cite https://en.wikipedia.org/wiki/Illuminant_D65
  */
 #ifndef DEFS_HPP_
 #define DEFS_HPP_
 
 #include <SDL2/SDL.h>
+#include <assert.h>
+#include <math.h>
 #include <msgpack.hpp>
 #include <gcrypt.h>
-#include <vector>
 #include <stdlib.h>
+#include <type_traits>
+#include <valarray>
+#include <vector>
 
 /**
  * @defgroup    SDL_Defines
@@ -36,11 +42,15 @@
  * One of the design choices is to only use 32 bit per pixel ARGB images. These are intended for
  * use with SDL_CreateRGBSurface() to prevent confusion and limit typos.
  */
-#define AMASK 0xff000000
-#define RMASK 0x00ff0000
-#define GMASK 0x0000ff00
-#define BMASK 0x000000ff
-#define BPP   32
+#define RMASK  0xff000000
+#define GMASK  0x00ff0000
+#define BMASK  0x0000ff00
+#define AMASK  0x000000ff
+#define RSHIFT 24
+#define GSHIFT 16
+#define BSHIFT  8
+#define ASHIFT  0
+#define BPP    32
 
 /** @defgroup ZMQ_Socket_Addresses */
 /** @def Address for display server reply socket. Recvs commands from clients. */
@@ -57,6 +67,93 @@
 #define CLNT_SUB_ADDR   "tcp://127.0.0.1:19992"
 /** @def Millisecs to process queued messages before close. Default infinite wait.*/
 #define ZMQ_SOCK_LINGER 1000
+
+/** @brief Matrix for conversion of CIEXYZ to RGB */
+const std::valarray<std::valarray<double> > XYZ2RGB_MAT
+    { { 3.240479, -1.537150, -0.498535 },
+      {-0.969256,  1.875992,  0.041556 },
+      { 0.055648, -0.204043,  1.057311 } };
+
+/** @brief Matrix for conversion of RGB to CIEXYZ */
+const std::valarray<std::valarray<double> > RGB2XYZ_MAT
+    { { 0.412453,  0.357580,  0.180423 },
+      { 0.212671,  0.715160,  0.072169 },
+      { 0.019334,  0.119193,  0.950227 } };
+
+/** @brief CIE X tristimulus value at D65. */
+const double X_d65 { 95.047};
+/** @brief CIE Y tristimulus value at D65. */
+const double Y_d65 {100.000};
+/** @brief CIE Z tristimulus value at D65. */
+const double Z_d65 {108.883};
+
+/**
+ * @brief Convenience type for a std::valarrays of subpixels; that is,
+ * a valarray (channels) of type pixtype.
+ */
+template <typename pixtype>
+using subpixar_t = std::valarray<pixtype>;
+
+/**
+ * @brief Convenience type for nested std::valarrays of subpixels; that is,
+ * a valarray (height) of valarray (width) of valarray (channels) of type pixtype.
+ */
+template <typename pixtype>
+using pixar_t = std::valarray<std::valarray<subpixar_t<pixtype> > >;
+
+void surf_diff(SDL_Surface* a, SDL_Surface* b, SDL_Surface* diff);
+
+void surf_change_hue(SDL_Surface* surf, double hue_adj_deg);
+
+void laba_change_hue(subpixar_t<double>& laba, double hue_adj_deg);
+
+/**
+ * @brief converts an CIEL*a*b*A pixel into a RGBA pixel.
+ * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ */
+subpixar_t<double> laba2rgba(const subpixar_t<double> laba);
+
+/**
+ * @brief converts an RGBA pixel into a CIEL*a*b*A pixel.
+ * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ */
+subpixar_t<double> rgba2laba(const subpixar_t<double> rgba);
+
+/**
+ * @brief converts an CIEL*a*b*A pixel into a CIEXYZA pixel.
+ * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ */
+subpixar_t<double> laba2xyza(const subpixar_t<double> laba);
+
+/**
+ * @brief converts a CIEXYZA pixel into a CIEL*a*b*A pixel.
+ * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ */
+subpixar_t<double> xyza2laba(const subpixar_t<double> xyza);
+
+/**
+ * @brief converts an RGBA pixel into a CIEXYZA pixel.
+ * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ */
+subpixar_t<double> rgba2xyza(const subpixar_t<double> rgba);
+
+/**
+ * @brief converts a CIEXYZA pixel into an RGBA pixel.
+ * @cite  http://www.cs.rit.edu/~ncs/color/t_convert.html#RGB%20to%20XYZ%20&%20XYZ%20to%20RGB
+ */
+subpixar_t<double> xyza2rgba(const subpixar_t<double> xyza);
+
+/**
+ * @brief Turn a pixar_t nested valarray into an SDL_Surface of format RGBA8888.
+ */
+SDL_Surface pixar2surf(pixar_t<double> pixar);
+
+/**
+ * @brief Construct a convenient std::valarray from the pixel data in an SDL_Surface.
+ * @param surf  **Must be in RGBA8888 format**
+ * @return      The valarray.
+ */
+pixar_t<double> surf2pixar(SDL_Surface* surf);
 
 /**
  * @brief Gets the md5 hash of the vector contents to the back of the vector.
