@@ -396,44 +396,28 @@ void surface_blur(SDL_Surface* src, SDL_Surface* dst, Uint8 amount) {
     SDL_UnlockSurface(src); SDL_UnlockSurface(dst);
 }
 
-void surface_diff(SDL_Surface* asurf, SDL_Surface* bsurf, SDL_Surface* diffsurf) {
-    using namespace cv;
-
-    if (asurf->h != bsurf->h || asurf->w != bsurf->w ||
-        asurf->h != diffsurf->h || asurf->w != diffsurf->w) {
-        throw std::invalid_argument("Args to surface_diff must be the same size.");
-    }
-
-    SDL_LockSurface(asurf); SDL_LockSurface(bsurf); SDL_LockSurface(diffsurf);
-    Mat amat    = Mat(asurf->h,    asurf->w,    CV_8UC4, asurf->pixels,    CV_AUTOSTEP);
-    Mat bmat    = Mat(bsurf->h,    bsurf->w,    CV_8UC4, bsurf->pixels,    CV_AUTOSTEP);
-    Mat diffmat = Mat(diffsurf->h, diffsurf->w, CV_8UC4, diffsurf->pixels, CV_AUTOSTEP);
-    diffmat = abs(amat-bmat);
-    SDL_UnlockSurface(asurf); SDL_UnlockSurface(bsurf); SDL_UnlockSurface(diffsurf);
-}
-
 void handle_mouse_motion(const SDL_Event* evt) {
     SDL_MouseMotionEvent* mmevt = (SDL_MouseMotionEvent*)evt;
     SDL_Rect src_rect, dst_rect;
-    if (sample_img == nullptr) {
-        SDL_Surface* tmp_img = IMG_Load("/home/justin/src/sdl2_tests/docs/images/Purple-dragon-sm.png");
-        sample_img = SDL_ConvertSurfaceFormat(tmp_img, SDL_PIXELFORMAT_RGBA8888, 0);
+    if (sample_img == nullptr || changed_img == nullptr) {
+        SDL_Surface* tmp_img = IMG_Load("/home/justin/src/sdl2_tests/docs/images/color-dragon240x227.png");
+        fprintf(stderr, "R=%08x G=%08x B=%08x A=%08x\n",
+                tmp_img->format->Rmask, tmp_img->format->Gmask, tmp_img->format->Bmask, tmp_img->format->Amask);
+        sample_img = SDL_ConvertSurfaceFormat(tmp_img, SDL_PIXELFORMAT_ARGB8888, 0);
+        fprintf(stderr, "R=%08x G=%08x B=%08x A=%08x\n",
+                sample_img->format->Rmask, sample_img->format->Gmask, sample_img->format->Bmask, sample_img->format->Amask);
+        changed_img = SDL_CreateRGBSurface(0, tmp_img->w, tmp_img->h, BPP, RMASK, GMASK, BMASK, AMASK);
+        SDL_LockSurface(sample_img); SDL_LockSurface(changed_img);
+        memcpy(changed_img->pixels, sample_img->pixels, tmp_img->w * tmp_img->h * 4);
+        SDL_UnlockSurface(sample_img); SDL_UnlockSurface(changed_img);
     }
     src_rect.x = 0;                   src_rect.y = 0;
     src_rect.h = sample_img->h;       src_rect.w = sample_img->w;
     dst_rect.x = mmevt->x;            dst_rect.y = mmevt->y;
     dst_rect.h = sample_img->h;       dst_rect.w = sample_img->w;
     if (mmevt->x > mmevt->y) {
-        SDL_Surface* changed = SDL_CreateRGBSurface(0, sample_img->w, sample_img->h, BPP,
-                                                    RMASK, GMASK, BMASK, AMASK);
-        SDL_Surface* diff = SDL_CreateRGBSurface(0, sample_img->w, sample_img->h, BPP,
-                                                 RMASK, GMASK, BMASK, AMASK);
-        SDL_LockSurface(sample_img); SDL_LockSurface(changed);
-        memcpy(changed->pixels, sample_img->pixels, (sample_img->w * sample_img->h * BPP / 8));
-        SDL_UnlockSurface(sample_img); SDL_UnlockSurface(changed);
-        surf_change_hue(changed, 15.0);
-        surf_diff(sample_img, changed, diff);
-        blit(diff, &src_rect, &dst_rect);
+        surf_change_hue(changed_img, 36.0);
+        blit(changed_img, &src_rect, &dst_rect);
     } else {
         blit(sample_img, &src_rect, &dst_rect);
     }

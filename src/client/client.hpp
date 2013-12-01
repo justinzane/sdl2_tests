@@ -50,6 +50,7 @@ zmq::socket_t zmq_sub_sock_(zmqcntx_, ZMQ_SUB);     /**< The socket to get event
 std::unordered_map<long long, std::vector<Uint32> > surf_cache {};
 Sint32 win_size[2] {0,0};                           /**< Silly holder for current window size. */
 SDL_Surface* sample_img = nullptr;
+SDL_Surface* changed_img = nullptr;
 
 // Functions ----------------------------------------------------------------------------------
 /** @brief Called by client loop for exit. */
