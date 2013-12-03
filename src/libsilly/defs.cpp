@@ -22,7 +22,124 @@
  */
 
 #include "defs.hpp"
-#include <emmintrin.h>
+
+/* @defgroup SRF SDL2 Surface Related Functions **********************************************/
+
+void pixar2surf(double* pixar, SDL_Surface* surf) {
+    SDL_LockSurface(surf);
+    Uint8* pix = (Uint8*)surf->pixels;
+    if (is_surf_abgr(surf)) {
+        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            (pixar[0+i] > 1.0) ? pix[3+i] = 255 : (pixar[0+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[0+i] * 255.0);
+            (pixar[1+i] > 1.0) ? pix[2+i] = 255 : (pixar[1+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[1+i] * 255.0);
+            (pixar[2+i] > 1.0) ? pix[1+i] = 255 : (pixar[2+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[2+i] * 255.0);
+            (pixar[3+i] > 1.0) ? pix[0+i] = 255 : (pixar[3+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[3+i] * 255.0);
+        }
+    } else if (is_surf_argb(surf)) {
+        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            (pixar[0+i] > 1.0) ? pix[3+i] = 255 : (pixar[0+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[0+i] * 255.0);
+            (pixar[1+i] > 1.0) ? pix[0+i] = 255 : (pixar[1+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[1+i] * 255.0);
+            (pixar[2+i] > 1.0) ? pix[1+i] = 255 : (pixar[2+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[2+i] * 255.0);
+            (pixar[3+i] > 1.0) ? pix[2+i] = 255 : (pixar[3+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[3+i] * 255.0);
+        }
+    } else if (is_surf_bgra(surf)) {
+        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            (pixar[0+i] > 1.0) ? pix[2+i] = 255 : (pixar[0+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[0+i] * 255.0);
+            (pixar[1+i] > 1.0) ? pix[1+i] = 255 : (pixar[1+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[1+i] * 255.0);
+            (pixar[2+i] > 1.0) ? pix[0+i] = 255 : (pixar[2+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[2+i] * 255.0);
+            (pixar[3+i] > 1.0) ? pix[3+i] = 255 : (pixar[3+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[3+i] * 255.0);
+        }
+    } else if (is_surf_rgba(surf)) {
+        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            (pixar[0+i] > 1.0) ? pix[0+i] = 255 : (pixar[0+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[0+i] * 255.0);
+            (pixar[1+i] > 1.0) ? pix[1+i] = 255 : (pixar[1+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[1+i] * 255.0);
+            (pixar[2+i] > 1.0) ? pix[2+i] = 255 : (pixar[2+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[2+i] * 255.0);
+            (pixar[3+i] > 1.0) ? pix[3+i] = 255 : (pixar[3+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[3+i] * 255.0);
+        }
+    }
+    SDL_UnlockSurface(surf);
+}
+
+void surf2pixar(SDL_Surface* surf, double* pixar) {
+    SDL_LockSurface(surf);
+    int i = 0;
+    if (is_surf_abgr(surf)) {
+        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
+            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
+            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
+            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
+        }
+    } else if (is_surf_argb(surf)) {
+        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
+            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
+            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
+            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
+        }
+    } else if (is_surf_bgra(surf)) {
+        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
+            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
+            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
+            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
+        }
+    } else if (is_surf_rgba(surf)) {
+        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
+            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
+            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
+            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
+            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
+        }
+    }
+    SDL_UnlockSurface(surf);
+}
+
+pixel_order get_surf_order(SDL_Surface* surf) {
+    if (surf->format->Bmask > surf->format->Gmask &&
+        surf->format->Gmask > surf->format->Rmask &&
+        surf->format->Rmask > surf->format->Amask) {
+        fprintf(stdout, "BGRA\n");
+        return pixel_order::BGRA;
+    } else if (surf->format->Rmask > surf->format->Gmask &&
+        surf->format->Gmask > surf->format->Bmask &&
+        surf->format->Bmask > surf->format->Amask) {
+        fprintf(stdout, "RGBA\n");
+        return pixel_order::RGBA;
+    } else if (surf->format->Amask > surf->format->Rmask &&
+        surf->format->Rmask > surf->format->Gmask &&
+        surf->format->Gmask > surf->format->Bmask) {
+        fprintf(stdout, "ARGB\n");
+        return pixel_order::ARGB;
+    } else if (surf->format->Amask > surf->format->Bmask &&
+        surf->format->Bmask > surf->format->Gmask &&
+        surf->format->Gmask > surf->format->Rmask) {
+        fprintf(stdout, "ABGR\n");
+        return pixel_order::ABGR;
+    }
+    return pixel_order::BOGUS;
+}
+
+bool is_surf_bgra(SDL_Surface* surf) {
+    return (surf->format->Bmask > surf->format->Gmask &&
+            surf->format->Gmask > surf->format->Rmask &&
+            surf->format->Rmask > surf->format->Amask);
+}
+bool is_surf_rgba(SDL_Surface* surf) {
+    return (surf->format->Rmask > surf->format->Gmask &&
+            surf->format->Gmask > surf->format->Bmask &&
+            surf->format->Bmask > surf->format->Amask);
+}
+bool is_surf_argb(SDL_Surface* surf) {
+    return (surf->format->Amask > surf->format->Rmask &&
+            surf->format->Rmask > surf->format->Gmask &&
+            surf->format->Gmask > surf->format->Bmask);
+}
+bool is_surf_abgr(SDL_Surface* surf) {
+    return (surf->format->Amask > surf->format->Bmask &&
+            surf->format->Bmask > surf->format->Gmask &&
+            surf->format->Gmask > surf->format->Rmask);
+}
 
 void surf_diff(SDL_Surface* a, SDL_Surface* b, SDL_Surface* diff) {
     if ((a->w * a->h * a->format->BitsPerPixel != b->w * b->h * b->format->BitsPerPixel) ||
@@ -30,22 +147,155 @@ void surf_diff(SDL_Surface* a, SDL_Surface* b, SDL_Surface* diff) {
         throw std::invalid_argument("Must be same size.");
     }
     SDL_LockSurface(a); SDL_LockSurface(b); SDL_LockSurface(diff);
+#pragma omp parallel for
     for (int i = 0; i < (a->h * a->w * 4); i++) {
         ((Uint8*)diff->pixels)[i] = abs(((Uint8*)a->pixels)[i] - ((Uint8*)b->pixels)[i]);
     }
     SDL_UnlockSurface(a); SDL_UnlockSurface(b); SDL_UnlockSurface(diff);
 }
 
+void surf_remap(SDL_Surface* src, SDL_Surface* dst) {
+    pixel_order src_order = get_surf_order(src);
+    pixel_order dst_order = get_surf_order(dst);
+    SDL_LockSurface(src); SDL_LockSurface(dst);
+    if (src_order == dst_order) {
+        memcpy(dst->pixels, src->pixels, (src->w * src->h * 4));
+    }
+#pragma GCC diagnostic push                 // We know that we do not hit every enum value!
+#pragma GCC diagnostic ignored "-Wswitch"
+    switch (src_order) {
+        case pixel_order::ABGR:
+            switch (dst_order) {
+                case pixel_order::ARGB:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+1];
+                    }
+                    break;
+                case pixel_order::RGBA:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+0];
+                    }
+                    break;
+                case pixel_order::BGRA:
+                        for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+0];
+                    }
+                    break;
+            }
+            break;
+        case pixel_order::ARGB:
+            switch (dst_order) {
+                case pixel_order::ABGR:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+1];
+                    }
+                    break;
+                case pixel_order::RGBA:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+2];
+                    }
+                    break;
+                case pixel_order::BGRA:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+0];
+                    }
+                    break;
+            }
+            break;
+        case pixel_order::BGRA:
+            switch (dst_order) {
+                case pixel_order::ABGR:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+2];
+                    }
+                    break;
+                case pixel_order::ARGB:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+0];
+                    }
+                    break;
+                case pixel_order::RGBA:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+3];
+                    }
+                    break;
+            }
+            break;
+        case pixel_order::RGBA:
+            switch (dst_order) {
+                case pixel_order::ARGB:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+2];
+                    }
+                    break;
+                case pixel_order::ABGR:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+3];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+0];
+                    }
+                    break;
+                case pixel_order::BGRA:
+                    for (int i = 0; i < (src->w * src->h * 4); i += 4) {
+                        ((Uint8*)dst->pixels)[i+0] = ((Uint8*)src->pixels)[i+2];
+                        ((Uint8*)dst->pixels)[i+1] = ((Uint8*)src->pixels)[i+1];
+                        ((Uint8*)dst->pixels)[i+2] = ((Uint8*)src->pixels)[i+0];
+                        ((Uint8*)dst->pixels)[i+3] = ((Uint8*)src->pixels)[i+3];
+                    }
+                    break;
+            }
+            break;
+    }
+#pragma GCC diagnostic pop
+    SDL_UnlockSurface(src); SDL_UnlockSurface(dst);
+}
+
 void surf_change_hue(SDL_Surface* surf, double hue_adj_deg) {
-    assert(surf != nullptr &&
-           surf->h > 0 &&
-           surf->w > 0);
+    assert(surf != nullptr && surf->h > 0 && surf->w > 0);
+    while (hue_adj_deg > 180.0) {
+        hue_adj_deg -= 360.0;
+    }
+    while (hue_adj_deg < -180.0) {
+        hue_adj_deg += 360.0;
+    }
     double hue_adj_rad = hue_adj_deg * M_PI / 180.0;
+
     const Uint32 numsubpix = (surf->h * surf->w * 4);
-    double* surfpix = static_cast<double*> (::operator new (sizeof(double[numsubpix])));;
+    double* surfpix = static_cast<double*> (::operator new (sizeof(double[numsubpix])));
     surf2pixar(surf, surfpix);
-    for (int i = 0; i < (surf->h * surf->w); i++) {
-        double* curpix = surfpix + i * 4;
+    for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
+        double* curpix = surfpix + i;
         rgba2laba(curpix);
         laba_change_hue(curpix, hue_adj_rad);
         laba2rgba(curpix);
@@ -53,8 +303,30 @@ void surf_change_hue(SDL_Surface* surf, double hue_adj_deg) {
     pixar2surf(surfpix, surf);
 }
 
+void surf_change_nothing(SDL_Surface* surf, double bogus __attribute__((unused))) {
+    assert(surf != nullptr && surf->h > 0 && surf->w > 0);
+    const Uint32 numsubpix = (surf->h * surf->w * 4);
+    double* surfpix = static_cast<double*> (::operator new (sizeof(double[numsubpix])));
+    surf2pixar(surf, surfpix);
+    for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
+        rgba2xyza(&(surfpix[i]));
+        xyza2laba(&(surfpix[i]));
+        laba2xyza(&(surfpix[i]));
+        xyza2rgba(&(surfpix[i]));
+    }
+    pixar2surf(surfpix, surf);
+}
+
+/* @defgroup CLR_func Color Functions ********************************************************/
+
 void laba_change_hue(double* laba, double hue_adj_rad) {
     double hue = std::atan(laba[2] / laba[1]) + hue_adj_rad;
+    while (hue > M_PI) {
+        hue -= (2.0 * M_PI);
+    }
+    while (hue < -1.0 * M_PI) {
+        hue += (2.0 * M_PI);
+    }
     double chroma = std::sqrt(std::pow(laba[1], 2.0) + std::pow(laba[2], 2.0));
     laba[2] = (chroma * std::sin(hue));
     laba[1] = (chroma * std::cos(hue));
@@ -115,120 +387,18 @@ void xyza2laba(double* pixar) {
 
 void rgba2xyza(double* pixar) {
     double x, y, z;
-    x = RGB2XYZ_MAT[0][0] * pixar[0] + RGB2XYZ_MAT[0][1] * pixar[0] + RGB2XYZ_MAT[0][2] * pixar[0];
-    y = RGB2XYZ_MAT[1][0] * pixar[1] + RGB2XYZ_MAT[1][1] * pixar[1] + RGB2XYZ_MAT[1][2] * pixar[1];
-    z = RGB2XYZ_MAT[2][0] * pixar[2] + RGB2XYZ_MAT[2][1] * pixar[2] + RGB2XYZ_MAT[2][2] * pixar[2];
+    x = RGB2XYZ_MAT[0][0] * pixar[0] + RGB2XYZ_MAT[0][1] * pixar[1] + RGB2XYZ_MAT[0][2] * pixar[2];
+    y = RGB2XYZ_MAT[1][0] * pixar[0] + RGB2XYZ_MAT[1][1] * pixar[1] + RGB2XYZ_MAT[1][2] * pixar[2];
+    z = RGB2XYZ_MAT[2][0] * pixar[0] + RGB2XYZ_MAT[2][1] * pixar[1] + RGB2XYZ_MAT[2][2] * pixar[2];
     pixar[0] = x; pixar[1] = y; pixar[2] = z; // pixar[3] = unchanged alpha
 }
 
 void xyza2rgba(double* pixar) {
     double r, g, b;
-    r = XYZ2RGB_MAT[0][0] * pixar[0] + XYZ2RGB_MAT[0][1] * pixar[0] + XYZ2RGB_MAT[0][2] * pixar[0];
-    g = XYZ2RGB_MAT[1][0] * pixar[1] + XYZ2RGB_MAT[1][1] * pixar[1] + XYZ2RGB_MAT[1][2] * pixar[1];
-    b = XYZ2RGB_MAT[2][0] * pixar[2] + XYZ2RGB_MAT[2][1] * pixar[2] + XYZ2RGB_MAT[2][2] * pixar[2];
+    r = XYZ2RGB_MAT[0][0] * pixar[0] + XYZ2RGB_MAT[0][1] * pixar[1] + XYZ2RGB_MAT[0][2] * pixar[2];
+    g = XYZ2RGB_MAT[1][0] * pixar[0] + XYZ2RGB_MAT[1][1] * pixar[1] + XYZ2RGB_MAT[1][2] * pixar[2];
+    b = XYZ2RGB_MAT[2][0] * pixar[0] + XYZ2RGB_MAT[2][1] * pixar[1] + XYZ2RGB_MAT[2][2] * pixar[2];
     pixar[0] = r; pixar[1] = g; pixar[2] = b; //pixar[3] = unchanged alpha
-}
-
-void pixar2surf(double* pixar, SDL_Surface* surf) {
-    SDL_LockSurface(surf);
-    Uint8* pix = (Uint8*)surf->pixels;
-    if (is_surf_abgr(surf)) {
-        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            (pixar[0+i] > 1.0) ? pix[3+i] = 255 : (pixar[0+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[0+i] * 255.0);
-            (pixar[1+i] > 1.0) ? pix[2+i] = 255 : (pixar[1+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[1+i] * 255.0);
-            (pixar[2+i] > 1.0) ? pix[1+i] = 255 : (pixar[2+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[2+i] * 255.0);
-            (pixar[3+i] > 1.0) ? pix[0+i] = 255 : (pixar[3+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[3+i] * 255.0);
-        }
-    } else if (is_surf_argb(surf)) {
-        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            (pixar[0+i] > 1.0) ? pix[3+i] = 255 : (pixar[0+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[0+i] * 255.0);
-            (pixar[1+i] > 1.0) ? pix[0+i] = 255 : (pixar[1+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[1+i] * 255.0);
-            (pixar[2+i] > 1.0) ? pix[1+i] = 255 : (pixar[2+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[2+i] * 255.0);
-            (pixar[3+i] > 1.0) ? pix[2+i] = 255 : (pixar[3+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[3+i] * 255.0);
-        }
-    } else if (is_surf_bgra(surf)) {
-        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            (pixar[0+i] > 1.0) ? pix[2+i] = 255 : (pixar[0+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[0+i] * 255.0);
-            (pixar[1+i] > 1.0) ? pix[1+i] = 255 : (pixar[1+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[1+i] * 255.0);
-            (pixar[2+i] > 1.0) ? pix[0+i] = 255 : (pixar[2+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[2+i] * 255.0);
-            (pixar[3+i] > 1.0) ? pix[3+i] = 255 : (pixar[3+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[3+i] * 255.0);
-        }
-    } else if (is_surf_rgba(surf)) {
-        for (int i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            (pixar[0+i] > 1.0) ? pix[0+i] = 255 : (pixar[0+i] < 0.0) ? pix[0+i] = 0 : pix[0+i] = Uint8(pixar[0+i] * 255.0);
-            (pixar[1+i] > 1.0) ? pix[1+i] = 255 : (pixar[1+i] < 0.0) ? pix[1+i] = 0 : pix[1+i] = Uint8(pixar[1+i] * 255.0);
-            (pixar[2+i] > 1.0) ? pix[2+i] = 255 : (pixar[2+i] < 0.0) ? pix[2+i] = 0 : pix[2+i] = Uint8(pixar[2+i] * 255.0);
-            (pixar[3+i] > 1.0) ? pix[3+i] = 255 : (pixar[3+i] < 0.0) ? pix[3+i] = 0 : pix[3+i] = Uint8(pixar[3+i] * 255.0);
-        }
-    }
-    SDL_UnlockSurface(surf);
-}
-
-void surf2pixar(SDL_Surface* surf, double* pixar) {
-    assert(surf != nullptr &&
-           surf->h > 0 && surf->w > 0 &&
-           surf->format->BitsPerPixel == BPP &&
-           surf->format->Amask == AMASK &&
-           surf->format->Rmask == RMASK &&
-           surf->format->Gmask == GMASK &&
-           surf->format->Bmask == BMASK);
-    if (pixar != nullptr) {
-        free((void*)pixar);
-    }
-    pixar = (double*)malloc((surf->h * surf->w * 4 * sizeof(double)));
-    SDL_LockSurface(surf);
-    int i alignas(Sint32) = 0;
-    if (is_surf_abgr(surf)) {
-        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
-            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
-            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
-            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
-        }
-    } else if (is_surf_argb(surf)) {
-        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
-            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
-            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
-            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
-        }
-    } else if (is_surf_bgra(surf)) {
-        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
-            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
-            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
-            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
-        }
-    } else if (is_surf_rgba(surf)) {
-        for (i = 0; i < (surf->h * surf->w * 4); i += 4) {
-            pixar[0+i] = ( (double) ((Uint8*)surf->pixels)[0+i] ) / 255.0;
-            pixar[1+i] = ( (double) ((Uint8*)surf->pixels)[1+i] ) / 255.0;
-            pixar[2+i] = ( (double) ((Uint8*)surf->pixels)[2+i] ) / 255.0;
-            pixar[3+i] = ( (double) ((Uint8*)surf->pixels)[3+i] ) / 255.0;
-        }
-    }
-    SDL_UnlockSurface(surf);
-}
-
-bool is_surf_bgra(SDL_Surface* surf) {
-    return (surf->format->Bmask > surf->format->Gmask &&
-            surf->format->Gmask > surf->format->Rmask &&
-            surf->format->Rmask > surf->format->Amask);
-}
-bool is_surf_rgba(SDL_Surface* surf) {
-    return (surf->format->Rmask > surf->format->Gmask &&
-            surf->format->Gmask > surf->format->Bmask &&
-            surf->format->Bmask > surf->format->Amask);
-}
-bool is_surf_argb(SDL_Surface* surf) {
-    return (surf->format->Amask > surf->format->Rmask &&
-            surf->format->Rmask > surf->format->Gmask &&
-            surf->format->Gmask > surf->format->Bmask);
-}
-bool is_surf_abgr(SDL_Surface* surf) {
-    return (surf->format->Amask > surf->format->Bmask &&
-            surf->format->Bmask > surf->format->Gmask &&
-            surf->format->Gmask > surf->format->Rmask);
 }
 
 
@@ -306,7 +476,10 @@ std::tuple<SDL_Surface, SDL_Rect, SDL_Rect> vec2blitparams(std::vector<Uint32> b
     for (Uint64 i = 0; i < (ssw*ssh); i++){
         ssp[i] = bv[i+10];
     }
-    SDL_Surface* ss = SDL_CreateRGBSurfaceFrom(ssp, ssw, ssh, BPP, 4*ssw, RMASK, GMASK, BMASK, AMASK);
+    SDL_Surface* ss = SDL_CreateRGBSurfaceFrom(ssp, ssw, ssh,
+                                               RGBA_consts::bpp, 4*ssw, RGBA_consts::rmask,
+                                               RGBA_consts::gmask, RGBA_consts::bmask,
+                                               RGBA_consts::amask);
     return std::tuple<SDL_Surface, SDL_Rect, SDL_Rect>(*ss, sr, dr);
 }
 

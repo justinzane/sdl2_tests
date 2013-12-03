@@ -87,50 +87,9 @@ void porter_duff_over(Uint32* top, Uint32* bot, Uint32* cmp);
 
 void surface_blur(SDL_Surface* src, SDL_Surface* dst, Uint8 amount);
 
-/**
- * @brief Adjust the color of a surface by changing any HSV parameter.
- * @note  This is a wrapper for individual hue, sat and val functions for performance
- * raisins.
- * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
- * @param surf      The image to be adjusted.
- * @param hue_diff  The change in hue           0.0f <= hue_diff <  360.0f;
- * @param sat_diff  The change in saturation    0.0f <= sat_diff <=   1.0f;
- * @param val_diff  The change in value         0.0f <= val_diff <=   1.0f;
- */
-void surface_change_hsv(SDL_Surface* src_surf, SDL_Surface* dst_surf,
-                        float hue_diff = 0.0f,
-                        float sat_diff = 0.0f,
-                        float val_diff = 0.0f);
-
-/**
- * @brief Adjust the color of a surface by changing hue.
- * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
- * @param surf      The image to be adjusted.
- * @param hue_diff  The change in hue           0.0f <= hue_diff <  360.0f;
- */
-void surface_change_hue(SDL_Surface* src_surf, SDL_Surface* dst_surf, float hue_diff);
-
-/**
- * @brief Adjust the color of a surface by changing saturation.
- * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
- * @param surf      The image to be adjusted.
- * @param sat_diff  The change in saturation    0.0f <= sat_diff <=   1.0f;
- */
-void surface_change_sat(SDL_Surface* src_surf, SDL_Surface* dst_surf, float sat_diff);
-
-/**
- * @brief Adjust the color of a surface by changing value.
- * @cite  Wikipedia provides a good explanation: https://en.wikipedia.org/wiki/HSL_and_HSV
- * @param surf      The image to be adjusted.
- * @param val_diff  The change in value         0.0f <= val_diff <=   1.0f;
- */
-void surface_change_val(SDL_Surface* src_surf, SDL_Surface* dst_surf, float val_diff);
-
 void surface_compose_overlay(SDL_Surface* top, int top_offset_x, int top_offset_y,
                              SDL_Surface* bot, int bot_offset_x, int bot_offset_y,
                              SDL_Surface* dst);
-
-void surface_shadow(SDL_Surface* src, SDL_Surface* dst, int offset_x, int offset_y);
 
 /**
  * @brief Sends a surface to the server for rendering.

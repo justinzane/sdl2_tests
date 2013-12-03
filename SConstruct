@@ -226,7 +226,11 @@ daemon_sources = ['src/daemon/daemon.cpp',
                   'src/daemon/winmgr.cpp']
 daemon = env.Program("daemon", [daemon_sources, libsilly])
 
-binaries = [libsilly, client, daemon]
+silly_sources = ['src/standalone/silly.cpp', ]
+silly = env.Program("silly", [silly_sources, libsilly])
+
+binaries = [libsilly, silly, client, daemon]
+
 env.AppendUnique(**builds[build])
 env.MergeFlags(env["extra_flags_" + build])
 

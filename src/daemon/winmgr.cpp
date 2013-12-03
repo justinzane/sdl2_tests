@@ -21,14 +21,7 @@
  * @details		TODO WRITEME
  */
 
-#include "../libsilly/defs.hpp"
 #include "winmgr.hpp"
-#include <SDL2/SDL_image.h>
-#include <msgpack.hpp>
-#include <zmq.hpp>
-#include <tuple>
-#include <atomic>
-#include <signal.h>
 
 bool winmgr::stop_listening_ = false;
 
@@ -66,7 +59,8 @@ winmgr::winmgr() :
     rend_ = SDL_CreateRenderer(wind_, -1,
                                SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
     SDL_SetRenderDrawColor(rend_, 31, 31, 31, 255);
-    scrn_ = SDL_CreateRGBSurface(0, disp_w_, disp_h_, 32, RMASK, GMASK, BMASK, AMASK);
+    scrn_ = SDL_CreateRGBSurface(0, disp_w_, disp_h_, RGBA_consts::bpp, RGBA_consts::rmask, RGBA_consts::gmask,
+                                 RGBA_consts::bmask, RGBA_consts::amask);
     txtr_ = SDL_CreateTexture(rend_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
                               disp_w_, disp_h_);
 

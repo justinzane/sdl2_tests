@@ -169,127 +169,6 @@ void alpha_blend_rgba(const cv::Mat& src1, const cv::Mat& src2, cv::Mat& dst) {
     }
 }
 
-
-void surface_change_hsv(SDL_Surface* src_surf, SDL_Surface* dst_surf,
-                        float hue_diff, float sat_diff, float val_diff) {
-    if (hue_diff != 0.0f) { surface_change_hue(src_surf, dst_surf, hue_diff); }
-    if (sat_diff != 0.0f) { surface_change_sat(src_surf, dst_surf, sat_diff); }
-    if (val_diff != 0.0f) { surface_change_val(src_surf, dst_surf, val_diff); }
-}
-
-void surface_change_hue(SDL_Surface* src_surf, SDL_Surface* dst_surf, float hue_diff) {
-    using namespace cv;
-
-    SDL_LockSurface(src_surf);
-    Mat src_mat = Mat(src_surf->h, src_surf->w, CV_8UC4);                // Make mat from surf
-    memcpy(src_mat.data, src_surf->pixels, src_surf->h * src_surf->w * sizeof(Uint32));
-    SDL_UnlockSurface(src_surf);
-
-    Mat rgbI_mat = Mat(src_mat.rows, src_mat.cols, CV_8UC3);     // split rgba into rgb and a
-    Mat aI_mat = Mat(src_mat.rows, src_mat.cols, CV_8UC1);       // since hsv has no a
-    Mat to_ar[] {rgbI_mat, aI_mat};
-    int from_to[] = { 0,0, 1,1, 2,2, 3,3 };                      // r=0, ... a=3
-    mixChannels(&src_mat, 1, to_ar, 2, from_to, 4);
-
-    Mat rgbF_mat = Mat(src_mat.rows, src_mat.cols, CV_32FC3);    // Make ints into floats
-    rgbI_mat.convertTo(rgbF_mat, CV_32F);
-
-    typedef Vec<float, 3> flt_vec_t;                             // The type of pixel in hsv
-    Mat hsv_mat = Mat(src_mat.rows, src_mat.cols, CV_32FC3);
-    cvtColor(rgbF_mat, hsv_mat, CV_RGB2HSV, 3);                  // convert to HSV
-
-    flt_vec_t pix_vec;
-    for (MatIterator_<flt_vec_t> mat_it = hsv_mat.begin<flt_vec_t>();
-         mat_it != hsv_mat.end<flt_vec_t>();
-         mat_it++) {
-        pix_vec = *mat_it;
-        Matx<float, 3, 1> pix_matx = (Matx<float, 3, 1>)pix_vec;
-        pix_matx.val[0] += hue_diff;
-        if (pix_matx.val[0] >= 360.0f || pix_matx.val[0] < 0.0f) {
-            pix_matx.val[0] = (180.0f / M_PI) * (std::asin(std::sin((pix_matx.val[0] * M_PI / 180.0f))));
-        }
-    }
-
-    cvtColor(hsv_mat, rgbF_mat, CV_HSV2RGB, 3);              // convert back to RGB
-
-    rgbF_mat.convertTo(rgbI_mat, CV_8U);                     // float back to int
-    Mat from_ar[] {rgbI_mat, aI_mat};
-    int to_from[] = { 0,0, 1,1, 2,2, 0,3 };                  // r=0, ... a=3
-    mixChannels(from_ar, 2, &src_mat, 1, to_from, 4);        // add alpha for RGBA
-
-    SDL_LockSurface(dst_surf);
-    memcpy(dst_surf->pixels, (void*)src_mat.data, dst_surf->h * dst_surf->w * sizeof(Uint32));
-    SDL_UnlockSurface(dst_surf);
-}
-
-void surface_change_sat(SDL_Surface* src_surf, SDL_Surface* dst_surf, float sat_diff) {
-    using namespace cv;
-
-    SDL_LockSurface(src_surf);
-    SDL_LockSurface(dst_surf);
-
-    Mat src_mat = Mat(src_surf->h, src_surf->w, CV_8UC4,
-                      src_surf->pixels, src_surf->w * sizeof(Uint32));            // Make mat from surf
-    Mat tmp_src_mat = src_mat.clone();
-    Mat src_rgbI = Mat(src_mat.rows, src_mat.cols, CV_8UC3);     // split rgba into rgb and a
-    Mat aI_mat = Mat(src_mat.rows, src_mat.cols, CV_8UC1);       // since hsv has no a
-    Mat to_ar[] {src_rgbI, aI_mat};
-    int from_to[] = { 0,0, 1,1, 2,2, 3,3 };                      // r=0, ... a=3
-    mixChannels(&tmp_src_mat, 1, to_ar, 2, from_to, 4);
-
-    Mat rgbF_mat = Mat(src_mat.rows, src_mat.cols, CV_32FC3);    // Make ints into floats
-    src_rgbI.convertTo(rgbF_mat, CV_32F);
-
-    typedef Vec<float, 3> flt_vec_t;                             // The type of pixel in hsv
-    Mat hsv_mat = Mat(src_mat.rows, src_mat.cols, CV_32FC3);
-    cvtColor(rgbF_mat, hsv_mat, CV_RGB2HSV, 3);                  // convert to HSV
-
-    flt_vec_t pix_vec;
-    for (MatIterator_<flt_vec_t> mat_it = hsv_mat.begin<flt_vec_t>();
-         mat_it != hsv_mat.end<flt_vec_t>();
-         mat_it++) {
-        pix_vec = *mat_it;
-        Matx<float, 3, 1> pix_matx = (Matx<float, 3, 1>)pix_vec;
-        CV_Assert(pix_matx.val[1] <= 1.0f && pix_matx.val[1] >= 0.0f);
-        pix_matx.val[1] += sat_diff;
-        if (pix_matx.val[1] > 1.0f) { pix_matx.val[1] = 1.0f; }
-        if (pix_matx.val[1] < 0.0f) { pix_matx.val[1] = 0.0f; }
-    }
-
-    cvtColor(hsv_mat, rgbF_mat, CV_HSV2RGB, 3);              // convert back to RGB
-
-    Mat tmp_dst_mat = Mat(dst_surf->h, dst_surf->w, CV_8UC4);
-    Mat dst_rgbI = Mat(tmp_dst_mat.rows, tmp_dst_mat.cols, CV_8UC3);
-    rgbF_mat.convertTo(dst_rgbI, CV_8U);                     // float back to int
-    Mat from_ar[] {dst_rgbI, aI_mat};
-    int to_from[] = { 0,0, 1,1, 2,2, 0,3 };                  // r=0, ... a=3
-    mixChannels(from_ar, 2, &tmp_dst_mat, 1, to_from, 4);        // add alpha for RGBA
-    Mat dst_mat = Mat(dst_surf->h, dst_surf->w, CV_8UC4, dst_surf->pixels, dst_surf->w*sizeof(Uint32));
-    tmp_dst_mat.copyTo(dst_mat);
-    SDL_UnlockSurface(dst_surf);
-    SDL_UnlockSurface(src_surf);
-}
-
-
-void surface_change_val(SDL_Surface* src_surf, SDL_Surface* dst_surf, float val_diff) {
-    using namespace cv;
-    typedef Vec<float, 4> flt_vec_t;
-
-    SDL_LockSurface(src_surf);
-    Mat src_mat = Mat(src_surf->h, src_surf->w, CV_8UC4, src_surf->pixels);
-    Mat hsv_mat = Mat(src_surf->h, src_surf->w, CV_32FC4);
-    cvtColor(src_mat, hsv_mat, CV_RGB2HSV, 4);      // convert to HSV
-    for (MatIterator_<flt_vec_t> mat_it = hsv_mat.begin<flt_vec_t>();
-         mat_it != hsv_mat.end<flt_vec_t>();
-         mat_it++) {
-        (*mat_it)[2] += val_diff;
-        if ((*mat_it)[2] > 1.0f) { (*mat_it)[2] = 1.0f; }
-        if ((*mat_it)[2] < 0.0f) { (*mat_it)[2] = 0.0f; }
-    }
-    cvtColor(hsv_mat, src_mat, CV_HSV2RGB, 4);      // convert back to RGBA
-    SDL_UnlockSurface(dst_surf);
-}
-
 void surface_compose_overlay(SDL_Surface* top, int top_offset_x, int top_offset_y,
                              SDL_Surface* bot, int bot_offset_x, int bot_offset_y,
                              SDL_Surface* dst) {
@@ -306,7 +185,9 @@ void surface_compose_overlay(SDL_Surface* top, int top_offset_x, int top_offset_
     SDL_Rect dst_rect = SDL_Rect {0,0,dst->w, dst->h};
 
     SDL_Surface* new_top;
-    new_top =  SDL_CreateRGBSurface(0, dst->w, dst->h, BPP, RMASK, GMASK, BMASK, AMASK);
+    new_top =  SDL_CreateRGBSurface(0, dst->w, dst->h,
+                                    RGBA_consts::bpp, RGBA_consts::rmask, RGBA_consts::gmask,
+                                    RGBA_consts::bmask, RGBA_consts::amask);
     SDL_FillRect(new_top, &dst_rect, 0x00000000);
     SDL_LockSurface(top); SDL_LockSurface(new_top);
 
@@ -335,7 +216,8 @@ void surface_compose_overlay(SDL_Surface* top, int top_offset_x, int top_offset_
     SDL_UnlockSurface(top); SDL_UnlockSurface(new_top);
 
     SDL_Surface* new_bot;
-    new_bot =  SDL_CreateRGBSurface(0, dst->w, dst->h, BPP, RMASK, GMASK, BMASK, AMASK);
+    new_bot =  SDL_CreateRGBSurface(0, dst->w, dst->h, RGBA_consts::bpp, RGBA_consts::rmask,
+                                    RGBA_consts::gmask, RGBA_consts::bmask, RGBA_consts::amask);
     SDL_FillRect(new_bot, &dst_rect, 0x00000000);
     SDL_LockSurface(bot); SDL_LockSurface(new_bot);
 
@@ -373,16 +255,6 @@ void surface_compose_overlay(SDL_Surface* top, int top_offset_x, int top_offset_
     SDL_UnlockSurface(new_top); SDL_UnlockSurface(new_bot); SDL_UnlockSurface(dst);
 }
 
-void surface_shadow(SDL_Surface* src, SDL_Surface* dst, int offset_x, int offset_y) {
-    SDL_Surface* tmp1 = SDL_CreateRGBSurface(0, src->w, src->h, BPP, RMASK, GMASK, BMASK, AMASK);
-    SDL_Surface* tmp2 = SDL_CreateRGBSurface(0, src->w, src->h, BPP, RMASK, GMASK, BMASK, AMASK);
-    surface_blur(src, tmp1, 7);
-    surface_change_val(tmp1, tmp2, -0.25);
-    surface_compose_overlay(src, 0, 0,
-                            tmp2, offset_x, offset_y,
-                            dst);
-}
-
 void surface_blur(SDL_Surface* src, SDL_Surface* dst, Uint8 amount) {
     SDL_LockSurface(src); SDL_LockSurface(dst);
 
@@ -399,28 +271,39 @@ void surface_blur(SDL_Surface* src, SDL_Surface* dst, Uint8 amount) {
 void handle_mouse_motion(const SDL_Event* evt) {
     SDL_MouseMotionEvent* mmevt = (SDL_MouseMotionEvent*)evt;
     SDL_Rect src_rect, dst_rect;
-    if (sample_img == nullptr || changed_img == nullptr) {
-        SDL_Surface* tmp_img = IMG_Load("/home/justin/src/sdl2_tests/docs/images/color-dragon240x227.png");
-        fprintf(stderr, "R=%08x G=%08x B=%08x A=%08x\n",
+    if (sample_img == nullptr) {
+        SDL_Surface* tmp_img = IMG_Load("/home/justin/src/sdl2_tests/docs/images/RGB_grad.tif");
+        fprintf(stderr, "MASK: R=%08x G=%08x B=%08x A=%08x\n",
                 tmp_img->format->Rmask, tmp_img->format->Gmask, tmp_img->format->Bmask, tmp_img->format->Amask);
-        sample_img = SDL_ConvertSurfaceFormat(tmp_img, SDL_PIXELFORMAT_ARGB8888, 0);
-        fprintf(stderr, "R=%08x G=%08x B=%08x A=%08x\n",
+        fprintf(stderr, "SHFT: R=% 8d G=%08d B=% 8d A=% 8d\n",
+                tmp_img->format->Rshift, tmp_img->format->Gshift, tmp_img->format->Bshift, tmp_img->format->Ashift);
+        fprintf(stderr, "LOSS: R=% 8d G=% 8d B=% 8d A=% 8d\n\n",
+                tmp_img->format->Rloss, tmp_img->format->Gloss, tmp_img->format->Bloss, tmp_img->format->Aloss);
+        sample_img = SDL_CreateRGBSurface(0, tmp_img->w, tmp_img->h, 32,
+                                           RGBA_consts::rmask, RGBA_consts::gmask,
+                                           RGBA_consts::bmask, RGBA_consts::amask);
+        fprintf(stderr, "MASK: R=%08x G=%08x B=%08x A=%08x\n",
                 sample_img->format->Rmask, sample_img->format->Gmask, sample_img->format->Bmask, sample_img->format->Amask);
-        changed_img = SDL_CreateRGBSurface(0, tmp_img->w, tmp_img->h, BPP, RMASK, GMASK, BMASK, AMASK);
-        SDL_LockSurface(sample_img); SDL_LockSurface(changed_img);
-        memcpy(changed_img->pixels, sample_img->pixels, tmp_img->w * tmp_img->h * 4);
-        SDL_UnlockSurface(sample_img); SDL_UnlockSurface(changed_img);
+        fprintf(stderr, "SHFT: R=% 8d G=%08d B=% 8d A=% 8d\n",
+                sample_img->format->Rshift, sample_img->format->Gshift, sample_img->format->Bshift, sample_img->format->Ashift);
+        fprintf(stderr, "LOSS: R=% 8d G=% 8d B=% 8d A=% 8d\n\n",
+                sample_img->format->Rloss, sample_img->format->Gloss, sample_img->format->Bloss, sample_img->format->Aloss);
+        sample_img = SDL_ConvertSurface(tmp_img, sample_img->format, 0);
+        fprintf(stderr, "MASK: R=%08x G=%08x B=%08x A=%08x\n",
+                sample_img->format->Rmask, sample_img->format->Gmask, sample_img->format->Bmask, sample_img->format->Amask);
+        fprintf(stderr, "SHFT: R=% 8d G=%08d B=% 8d A=% 8d\n",
+                sample_img->format->Rshift, sample_img->format->Gshift, sample_img->format->Bshift, sample_img->format->Ashift);
+        fprintf(stderr, "LOSS: R=% 8d G=% 8d B=% 8d A=% 8d\n\n",
+                sample_img->format->Rloss, sample_img->format->Gloss, sample_img->format->Bloss, sample_img->format->Aloss);
     }
     src_rect.x = 0;                   src_rect.y = 0;
     src_rect.h = sample_img->h;       src_rect.w = sample_img->w;
     dst_rect.x = mmevt->x;            dst_rect.y = mmevt->y;
     dst_rect.h = sample_img->h;       dst_rect.w = sample_img->w;
-    if (mmevt->x > mmevt->y) {
-        surf_change_hue(changed_img, 36.0);
-        blit(changed_img, &src_rect, &dst_rect);
-    } else {
-        blit(sample_img, &src_rect, &dst_rect);
-    }
+    double mmang = 0.0;
+    mmang = std::atan2(mmevt->y, mmevt->x);
+    surf_change_hue(sample_img, mmang);
+    blit(sample_img, &src_rect, &dst_rect);
 }
 
 void handle_text_input(const SDL_Event* evt) {
@@ -437,8 +320,6 @@ bool cache_blitparam_vec(std::vector<Uint32>& bp_vec) {
     auto was_inserted = surf_cache.emplace(get_vec_hash(bp_vec), bp_vec);
     return std::get<1>(was_inserted);
 }
-
-Uint64 dup_count = 0;
 
 void blit(SDL_Surface* src_surf, const SDL_Rect* src_rect, SDL_Rect* dst_rect) {
     std::vector<Uint32> bp_vec = blitparams2vec(src_surf, src_rect, dst_rect);

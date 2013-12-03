@@ -25,12 +25,14 @@
 
 #include "../libsilly/defs.hpp"
 #include <SDL2/SDL.h>
-#include <zmq.hpp>
+#include <SDL2/SDL_image.h>
 #include <msgpack.hpp>
-#include <cstdbool>
-#include <tuple>
+#include <zmq.hpp>
 #include <atomic>
+#include <cstdbool>
+#include <signal.h>
 #include <stdio.h>
+#include <tuple>
 
 /**  @type winmgr TODO: WRITEME */
 class winmgr {
